@@ -284,8 +284,8 @@ public:
 
 class GameInstructionNewExpression : public game_instruction {
 public:
-    int beg{0};
-    int end{0};
+    int beg{ 0 };
+    int end{ 0 };
 
     static inline instructionVtable defVtable;
     void setVtable() {
@@ -304,7 +304,7 @@ public:
     virtual r_string get_name() const { return ""sv; }
 
     GameInstructionNewExpression() { setVtable(); }
-    GameInstructionNewExpression(std::nullptr_t) { }
+    GameInstructionNewExpression(std::nullptr_t) {}
 };
 
 
@@ -408,14 +408,14 @@ uint32_t matchBrackets(char bracketOpenType, char bracketCloseType, std::string_
     return offset;
 }
 
-ref<GameInstructionConst> parseConst (std::string_view& cnst) {
+ref<GameInstructionConst> parseConst(std::string_view& cnst) {
     //type ...
     auto type = cnst.substr(0, cnst.find_first_of(' '));
     cnst = cnst.substr(type.length() + 1);
 
     if (type == "string") {
         auto stringLength = cnst.find_first_of(';');
-        auto string = cnst.substr(1, stringLength-2);
+        auto string = cnst.substr(1, stringLength - 2);
         cnst = cnst.substr(stringLength + 1);
         return GameInstructionConst::make(string);
     } else if (type == "code") {
@@ -445,11 +445,10 @@ ref<GameInstructionFunction> parseFunction(game_state* gs, std::string_view& cns
 
 
     std::string name(type);
-     auto& f = gs->_scriptFunctions.get(name.data());
-     if (gs->_scriptFunctions.is_null(f)) return nullptr;
- 
-     return GameInstructionFunction::make(&f);
-    return nullptr;
+    auto& f = gs->_scriptFunctions.get(name.data());
+    if (gs->_scriptFunctions.is_null(f)) return nullptr;
+
+    return GameInstructionFunction::make(&f);
 }
 
 ref<GameInstructionOperator> parseOperator(game_state* gs, std::string_view& cnst) {
@@ -511,21 +510,21 @@ game_value decompileAssembly(uintptr_t gs, game_value_parameter code) {
 
 game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
     auto gamestate = (game_state*) gs;
-    std::string_view cd = (r_string)code;
+    std::string_view cd = (r_string) code;
     std::vector<ref<game_instruction>> instr;
 
     while (cd.length() > 2) {
         skipWhitespace(cd);
 
         auto type = cd.substr(0, cd.find_first_of(' '));
-        cd = cd.substr(type.length()+1);
+        cd = cd.substr(type.length() + 1);
 
-            /*
-            return "endStatement";
+        /*
+        return "endStatement";
 
-            return std::string("makeArray ") + std::to_string(inst->size) + ";";
+        return std::string("makeArray ") + std::to_string(inst->size) + ";";
 
-            */
+        */
 
 
         if (type == "push") {
@@ -558,7 +557,7 @@ game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
         }
 
 
-        
+
     }
 
     auto c = sqf::compile("test");
@@ -591,9 +590,9 @@ int intercept::api_version() {
 }
 
 void intercept::pre_start() {
-	
-	
-	 static auto _decompileAsm = intercept::client::host::registerFunction("decompileASM", "", decompileAssembly, GameDataType::SCALAR, GameDataType::CODE);
+
+
+    static auto _decompileAsm = intercept::client::host::registerFunction("decompileASM", "", decompileAssembly, GameDataType::SCALAR, GameDataType::CODE);
 
     static auto _compileAsm = intercept::client::host::registerFunction("compileASM"sv, ""sv, compileAssembly, GameDataType::CODE, GameDataType::STRING);
 
