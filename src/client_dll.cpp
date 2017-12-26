@@ -443,7 +443,6 @@ ref<GameInstructionFunction> parseFunction(game_state* gs, std::string_view& cns
     auto type = cnst.substr(0, cnst.find_first_of(';'));
     cnst = cnst.substr(type.length() + 1);
 
-
     std::string name(type);
     auto& f = gs->_scriptFunctions.get(name.data());
     if (gs->_scriptFunctions.is_null(f)) return nullptr;
@@ -454,7 +453,6 @@ ref<GameInstructionFunction> parseFunction(game_state* gs, std::string_view& cns
 ref<GameInstructionOperator> parseOperator(game_state* gs, std::string_view& cnst) {
     auto type = cnst.substr(0, cnst.find_first_of(';'));
     cnst = cnst.substr(type.length() + 1);
-
 
     std::string name(type);
     auto tb = gs->_scriptOperators.get_table_for_key(name.data());
@@ -485,14 +483,11 @@ ref<GameInstructionArray> parseArray(game_state* gs, std::string_view& cnst, boo
     return GameInstructionArray::make(atoi(type.data()));
 }
 
-
-
 #include <cctype>
 void skipWhitespace(std::string_view& str) {
     while (std::isspace(str[0]) && str.length() > 2)
         str = str.substr(1);
 }
-
 
 game_value decompileAssembly(uintptr_t gs, game_value_parameter code) {
     if (code.is_nil()) return 0;
@@ -518,14 +513,6 @@ game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
 
         auto type = cd.substr(0, cd.find_first_of(' '));
         cd = cd.substr(type.length() + 1);
-
-        /*
-        return "endStatement";
-
-        return std::string("makeArray ") + std::to_string(inst->size) + ";";
-
-        */
-
 
         if (type == "push") {
             auto cnst = parseConst(cd);
