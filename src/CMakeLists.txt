@@ -6,9 +6,9 @@ set(INTERCEPT_INCLUDE_PATH "${INTERCEPT_CLIENT_PATH}/headers" "${INTERCEPT_CLIEN
 
 
 if(USE_64BIT_BUILD)
-    set(INTERCEPT_CBA_NAME "intercept-cba_x64")
+    set(INTERCEPT_SQFASM_NAME "sqf-assembly_x64")
 else()
-    set(INTERCEPT_CBA_NAME "intercept-cba")
+    set(INTERCEPT_SQFASM_NAME "sqf-assembly")
 endif()
 
 
@@ -17,7 +17,7 @@ add_definitions(/DNOMINMAX)
 add_definitions(/DINTERCEPT_SQF_STRTYPE_RSTRING)
 add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS) #No I don't cheat!
 
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/rv/${INTERCEPT_CBA_NAME}/intercept")
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/rv/${INTERCEPT_SQFASM_NAME}/intercept")
 
 file(GLOB INTERCEPT_SOURCES "${INTERCEPT_CLIENT_PATH}/intercept/client/*.cpp"  "${INTERCEPT_CLIENT_PATH}/intercept/client/sqf/*.cpp" "${INTERCEPT_CLIENT_PATH}/intercept/shared/*.cpp")
 SOURCE_GROUP("intercept" FILES ${INTERCEPT_SOURCES})
@@ -27,36 +27,22 @@ SOURCE_GROUP("intercept" FILES ${INTERCEPT_SOURCES})
 
 
 
-file(GLOB_RECURSE INTERCEPT_CBA_SOURCES *.h *.hpp *.c *.cpp)
-SOURCE_GROUP("src" FILES ${INTERCEPT_CBA_SOURCES})
+file(GLOB_RECURSE INTERCEPT_SQFASM_SOURCES *.h *.hpp *.c *.cpp)
+SOURCE_GROUP("src" FILES ${INTERCEPT_SQFASM_SOURCES})
 
+set(library_sources ${INTERCEPT_SQFASM_SOURCES})
 
-file(GLOB INTERCEPT_CBA_SQF_EXT_SOURCES "SQFExtension/*.cpp" "SQFExtension/*.hpp" "SQFExtension/*.h")
-SOURCE_GROUP("src/SQFExtension" FILES ${INTERCEPT_CBA_SQF_EXT_SOURCES})
-
-file(GLOB INTERCEPT_CBA_EVENTHANDLERS_SOURCES "Eventhandlers/*.cpp" "Eventhandlers/*.hpp" "Eventhandlers/*.h")
-SOURCE_GROUP("src/Eventhandlers" FILES ${INTERCEPT_CBA_EVENTHANDLERS_SOURCES})
-
-file(GLOB INTERCEPT_CBA_Keybinding_SOURCES "Keybinding/*.cpp" "Keybinding/*.hpp" "Keybinding/*.h")
-SOURCE_GROUP("src/Keybinding" FILES ${INTERCEPT_CBA_Keybinding_SOURCES})
-
-file(GLOB INTERCEPT_CBA_Keybinding_SOURCES "Common/*.cpp" "Common/*.hpp" "Common/*.h")
-SOURCE_GROUP("src/Common" FILES ${INTERCEPT_CBA_Keybinding_SOURCES})
-
-
-set(library_sources ${INTERCEPT_CBA_SOURCES})
-
-add_library( ${INTERCEPT_CBA_NAME} SHARED ${library_sources} ${INTERCEPT_SOURCES} ${INTERCEPT_CBA_SQF_EXT_SOURCES})
+add_library( ${INTERCEPT_SQFASM_NAME} SHARED ${library_sources} ${INTERCEPT_SOURCES} ${INTERCEPT_SQFASM_SQF_EXT_SOURCES})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${INTERCEPT_INCLUDE_PATH} )
 
-target_link_libraries (${INTERCEPT_CBA_NAME} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (${INTERCEPT_SQFASM_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
-target_link_libraries(${INTERCEPT_CBA_NAME} ${LINK_LIBS})
+target_link_libraries(${INTERCEPT_SQFASM_NAME} ${LINK_LIBS})
 
-target_link_libraries(${INTERCEPT_CBA_NAME} ${LINK_LIBS})
-set_target_properties(${INTERCEPT_CBA_NAME} PROPERTIES PREFIX "")
-set_target_properties(${INTERCEPT_CBA_NAME} PROPERTIES FOLDER intercept-cba)
+target_link_libraries(${INTERCEPT_SQFASM_NAME} ${LINK_LIBS})
+set_target_properties(${INTERCEPT_SQFASM_NAME} PROPERTIES PREFIX "")
+set_target_properties(${INTERCEPT_SQFASM_NAME} PROPERTIES FOLDER intercept-cba)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	SET(CMAKE_CXX_FLAGS "-std=c++1z -O2 -s -fPIC -fpermissive -static-libgcc -static-libstdc++")#-march=i686 -m32

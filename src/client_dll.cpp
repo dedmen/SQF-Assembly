@@ -1,5 +1,9 @@
 #include <intercept.hpp>
+#include <array>
+#include <string_view>
 
+using namespace std::string_view_literals;
+using namespace intercept;
 
 
 namespace intercept::__internal {
@@ -491,7 +495,7 @@ void skipWhitespace(std::string_view& str) {
 }
 
 
-game_value instructionCount(uintptr_t gs, game_value_parameter code) {
+game_value decompileAssembly(uintptr_t gs, game_value_parameter code) {
     if (code.is_nil()) return 0;
     auto c = (game_data_code*) code.data.get();
     if (!c->instructions) return 0;
@@ -589,7 +593,7 @@ int intercept::api_version() {
 void intercept::pre_start() {
 	
 	
-	 static auto _instructionCount = intercept::client::host::registerFunction("instructionCount", "", instructionCount, GameDataType::SCALAR, GameDataType::CODE);
+	 static auto _decompileAsm = intercept::client::host::registerFunction("decompileASM", "", decompileAssembly, GameDataType::SCALAR, GameDataType::CODE);
 
     static auto _compileAsm = intercept::client::host::registerFunction("compileASM"sv, ""sv, compileAssembly, GameDataType::CODE, GameDataType::STRING);
 
