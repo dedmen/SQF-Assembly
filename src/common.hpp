@@ -324,13 +324,13 @@ namespace intercept::assembly {
 	{
 	private:
 		std::hash_map<const char*, game_value> map;
-		std::hash_map<const char*, std::function<bool(ref<game_instruction>, ref<game_instruction>, game_value*, int*)>> fmap;
+		std::hash_map<const char*, std::function<int(ref<game_instruction>, ref<game_instruction>, game_value*)>> fmap;
 	public:
 		asshelper(game_state* gs);
 		bool containsNular(const char* key) const;
 		bool containsFunc(const char* key) const;
 		game_value get(const char* key) const;
-		bool asshelper::get(const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out, int *died) const;
+		int asshelper::get(const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out) const;
 	};
     void optimize(game_state* gs, asshelper* nh, ref<compact_array<ref<game_instruction>>> instructions);
 }

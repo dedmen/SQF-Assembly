@@ -9,27 +9,25 @@ namespace intercept::assembly {
 		map["parsingnamespace"] = sqf::parsing_namespace();
 		map["profilenamespace"] = sqf::profile_namespace();
 
-		fmap["sqrt"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out, int *died) -> bool {
-			*died = 1;
+		fmap["sqrt"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out) -> int {
 			auto left = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return false; }
+			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return 0; }
 			*out = game_value(sqrt((float)left->value));
-			return true;
+			return 1;
 		};
-		fmap["mod"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out, int *died) -> bool {
-			*died = 2;
+		fmap["mod"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out) -> int {
 			auto left = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return false; }
+			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return 0; }
 			auto right = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (right && right->value.type_enum() != types::GameDataType::SCALAR) { return false; }
+			if (right && right->value.type_enum() != types::GameDataType::SCALAR) { return 0; }
 			*out = game_value(fmodf((float)left->value, (float)right->value));
-			return true;
+			return 2;
 		};
 	}
 	bool asshelper::containsNular(const char* key) const { return map.find(key) != map.end(); }
 	bool asshelper::containsFunc(const char* key) const { return fmap.find(key) != fmap.end(); }
 	game_value asshelper::get(const char* key) const { return map.at(key); }
-	bool asshelper::get(const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out, int *died) const { return fmap.at(key)(left, right, out, died); }
+	int asshelper::get(const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out) const { return fmap.at(key)(left, right, out); }
 
 	enum insttype
 	{
@@ -165,9 +163,8 @@ namespace intercept::assembly {
 				case insttype::callFunction: {
 					auto inst = static_cast<GameInstructionFunction*>(instr.get());
 					game_value valueslot;
-					int diedslot;
-					if (nh->containsFunc(inst->getFuncName().c_str()) &&
-						nh->get(inst->getFuncName().c_str(), instructions->get(i - died - 1), instructions->get(i - died - 2), &valueslot, &diedslot))
+					int diedslot = nh->get(inst->getFuncName().c_str(), instructions->get(i - died - 1), instructions->get(i - died - 2), &valueslot);
+					if (diedslot)
 					{
 						died += diedslot;
 						instructions->data()[i] = GameInstructionConst::make(valueslot);
