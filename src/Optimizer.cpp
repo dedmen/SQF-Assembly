@@ -12,16 +12,16 @@ namespace intercept::assembly {
 		fmap["sqrt"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out, int *died) -> bool {
 			*died = 1;
 			auto left = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (left && left->value.data->type() != 0) { return false; }
+			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return false; }
 			*out = game_value(sqrt((float)left->value));
 			return true;
 		};
 		fmap["mod"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out, int *died) -> bool {
 			*died = 2;
 			auto left = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (left && left->value.data->type() != 0) { return false; }
+			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return false; }
 			auto right = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (right && right->value.data->type() != 0) { return false; }
+			if (right && right->value.type_enum() != types::GameDataType::SCALAR) { return false; }
 			*out = game_value(fmodf((float)left->value, (float)right->value));
 			return true;
 		};
