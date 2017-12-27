@@ -4,38 +4,50 @@ namespace intercept::assembly {
 
 	asshelper::asshelper(game_state* gs)
 	{
-		map["missionnamespace"] = sqf::mission_namespace();
-		map["uinamespace"] = sqf::ui_namespace();
-		map["parsingnamespace"] = sqf::parsing_namespace();
-		map["profilenamespace"] = sqf::profile_namespace();
+		nmap["missionnamespace"] = sqf::mission_namespace();
+		nmap["uinamespace"] = sqf::ui_namespace();
+		nmap["parsingnamespace"] = sqf::parsing_namespace();
+		nmap["profilenamespace"] = sqf::profile_namespace();
 
-		fmap["sqrt"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out) -> int {
-			auto left = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return 0; }
-			*out = game_value(sqrt((float)left->value));
+		umap["sqrt"] = [](game_value right, game_value *out) -> int {
+			if (right.type_enum() != types::GameDataType::SCALAR) { return 0; }
+			*out = game_value(sqrt((float)right));
 			return 1;
 		};
-		fmap["mod"] = [](ref<game_instruction> leftinstr, ref<game_instruction> rightinstr, game_value *out) -> int {
-			auto left = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (left && left->value.type_enum() != types::GameDataType::SCALAR) { return 0; }
-			auto right = dynamic_cast<GameInstructionConst*>(leftinstr.get());
-			if (right && right->value.type_enum() != types::GameDataType::SCALAR) { return 0; }
-			*out = game_value(fmodf((float)left->value, (float)right->value));
+		bmap["mod"] = [](game_value left, game_value right, game_value *out) -> int {
+			if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR) { return 0; }
+			*out = game_value(fmodf((float)left, (float)right));
 			return 2;
 		};
 	}
-	bool asshelper::containsNular(const char* key) const { return map.find(key) != map.end(); }
-	bool asshelper::containsFunc(const char* key) const { return fmap.find(key) != fmap.end(); }
-	game_value asshelper::get(const char* key) const { return map.at(key); }
-	int asshelper::get(const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out) const { return fmap.at(key)(left, right, out); }
+	bool asshelper::containsNular(const char* key) const { return nmap.find(key) != nmap.end(); }
+	bool asshelper::containsUnary(const char* key) const { return umap.find(key) != umap.end(); }
+	bool asshelper::containsBinary(const char* key) const { return bmap.find(key) != bmap.end(); }
+
+	game_value asshelper::get(const char* key) const { return nmap.at(key); }
+	int asshelper::get(game_state* gs, const char* key, ref<game_instruction> right, game_value *out) const
+	{
+		if (!isconst(gs, this, right))
+			return 0;
+		auto rightval = static_cast<GameInstructionConst*>(right.get());
+		return umap.at(key)(rightval, out);
+	}
+	int asshelper::get(game_state* gs, const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out) const
+	{
+		if (!isconst(gs, this, left) || !isconst(gs, this, right))
+			return 0;
+		auto leftval = static_cast<GameInstructionConst*>(left.get());
+		auto rightval = static_cast<GameInstructionConst*>(right.get());
+		return bmap.at(key)(leftval, rightval, out);
+	}
 
 	enum insttype
 	{
 		NA = -1,
 		endStatement,
 		push,
-		callFunction,
-		callOperator,
+		callUnary,
+		callBinary,
 		assignToLocal,
 		assignTo,
 		callNular,
@@ -53,10 +65,10 @@ namespace intercept::assembly {
 		case GameInstructionConst::typeIDHash:
 			return insttype::push;
 		case GameInstructionFunction::typeIDHash: {
-			return insttype::callFunction;
+			return insttype::callUnary;
 		} break;
 		case GameInstructionOperator::typeIDHash:
-			return insttype::callOperator;
+			return insttype::callBinary;
 		case GameInstructionAssignment::typeIDHash: {
 			GameInstructionAssignment* inst = static_cast<GameInstructionAssignment*>(instr.get());
 			if (inst->forceLocal) {
@@ -83,7 +95,7 @@ namespace intercept::assembly {
 		}
 	}
 
-	bool isconst(game_state* gs, asshelper* nh, ref<game_instruction> instr)
+	bool isconst(game_state* gs, const asshelper* nh, ref<game_instruction> instr)
 	{
 		auto type = getinsttype(gs, instr);
 		if (type == insttype::push)
@@ -160,10 +172,20 @@ namespace intercept::assembly {
 					died += arrsize;
 					instructions->data()[i] = GameInstructionConst::make(std::move(arr));
 				} break;
-				case insttype::callFunction: {
+				case insttype::callUnary: {
 					auto inst = static_cast<GameInstructionFunction*>(instr.get());
 					game_value valueslot;
-					int diedslot = nh->get(inst->getFuncName().c_str(), instructions->get(i - died - 1), instructions->get(i - died - 2), &valueslot);
+					int diedslot = nh->get(gs, inst->getFuncName().c_str(), instructions->get(i - died - 1), &valueslot);
+					if (diedslot)
+					{
+						died += diedslot;
+						instructions->data()[i] = GameInstructionConst::make(valueslot);
+					}
+				} break;
+				case insttype::callBinary: {
+					auto inst = static_cast<GameInstructionFunction*>(instr.get());
+					game_value valueslot;
+					int diedslot = nh->get(gs, inst->getFuncName().c_str(), instructions->get(i - died - 2), instructions->get(i - died - 1), &valueslot);
 					if (diedslot)
 					{
 						died += diedslot;
