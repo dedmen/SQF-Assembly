@@ -270,7 +270,9 @@ game_value optimizeCode(uintptr_t gs, game_value_parameter code) {
     compiled->code_string = origCode->code_string;
     compiled->instructions = compact_array<ref<game_instruction>>::create(*origCode->instructions);
 
-    intercept::assembly::optimize(gamestate, compiled->instructions);
+	//ToDo: move into a gen-one-time static variable
+	auto nh = intercept::assembly::asshelper(gamestate);
+    intercept::assembly::optimize(gamestate, &nh, compiled->instructions);
 
     return c;
 }

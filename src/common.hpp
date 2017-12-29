@@ -2,6 +2,8 @@
 #include <intercept.hpp>
 #include <array>
 #include <string_view>
+#include <hash_map>
+#include <functional>
 
 using namespace std::string_view_literals;
 using namespace intercept;
@@ -317,5 +319,21 @@ public:
 };
 
 namespace intercept::assembly {
-    void optimize(game_state* gs, ref<compact_array<ref<game_instruction>>> instructions);
+
+	class asshelper
+	{
+	private:
+		std::hash_map<const char*, game_value> nmap;
+		std::hash_map<const char*, std::function<int(game_value, game_value*)>> umap;
+		std::hash_map<const char*, std::function<int(game_value, game_value, game_value*)>> bmap;
+	public:
+		asshelper(game_state* gs);
+		bool containsNular(const char* key) const;
+		bool containsUnary(const char* key) const;
+		bool containsBinary(const char* key) const;
+		game_value get(const char* key) const;
+		int asshelper::get(game_state* gs, const char* key, ref<game_instruction> right, game_value *out) const;
+		int asshelper::get(game_state* gs, const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out) const;
+	};
+    void optimize(game_state* gs, asshelper* nh, ref<compact_array<ref<game_instruction>>> instructions);
 }
