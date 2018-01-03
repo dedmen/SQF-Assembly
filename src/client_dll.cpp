@@ -268,12 +268,14 @@ game_value optimizeCode(uintptr_t gs, game_value_parameter code) {
     auto c = sqf::compile("test");
     auto compiled = static_cast<game_data_code*>(c.data.get());
     compiled->code_string = origCode->code_string;
-    compiled->instructions = compact_array<ref<game_instruction>>::create(*origCode->instructions);
 
 	//ToDo: move into a gen-one-time static variable
-	auto nh = intercept::assembly::asshelper(gamestate);
-    intercept::assembly::optimize(gamestate, &nh, compiled->instructions);
+    asshelper nh;
+    auto newInstructions = nh.optimize(gamestate, origCode->instructions);
 
+
+
+    compiled->instructions = compact_array<ref<game_instruction>>::create(newInstructions.begin(), newInstructions.end());
     return c;
 }
 

@@ -319,22 +319,35 @@ public:
     GameInstructionNewExpression(std::nullptr_t) {}
 };
 
-namespace intercept::assembly {
+class asshelper
+{
+private:
+    std::unordered_map<std::string_view, game_value> nmap;
+    std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value)>> umap;
+    std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value, game_value)>> bmap;
+public:
+    asshelper();
+    bool containsNular(std::string_view key) const;
+    bool containsUnary(std::string_view key) const;
+    bool containsBinary(std::string_view key) const;
+    game_value get(std::string_view key) const;
+    std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> right) const;
+    std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> left, ref<game_instruction> right) const;
+    enum class insttype {
+        NA = -1,
+        endStatement,
+        push,
+        callUnary,
+        callBinary,
+        assignToLocal,
+        assignTo,
+        callNular,
+        getVariable,
+        makeArray
+    };
 
-	class asshelper
-	{
-	private:
-		std::unordered_map<std::string_view, game_value> nmap;
-		std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value)>> umap;
-		std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value, game_value)>> bmap;
-	public:
-		asshelper(game_state* gs);
-		bool containsNular(std::string_view key) const;
-		bool containsUnary(std::string_view key) const;
-		bool containsBinary(std::string_view key) const;
-		game_value get(std::string_view key) const;
-		std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> right) const;
-		std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> left, ref<game_instruction> right) const;
-	};
-    void optimize(game_state* gs, asshelper* nh, ref<compact_array<ref<game_instruction>>> instructions);
-}
+    static insttype getinsttype(game_state* gs, ref<game_instruction> instr);
+    bool isconst(game_state* gs, ref<game_instruction> instr) const;
+    game_value getconst(game_state* gs, ref<game_instruction> instr) const;
+    std::vector<ref<game_instruction>> optimize(game_state* gs, ref<compact_array<ref<game_instruction>>> instructions);
+};
