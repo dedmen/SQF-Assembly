@@ -2,8 +2,9 @@
 #include <intercept.hpp>
 #include <array>
 #include <string_view>
-#include <hash_map>
+#include <unordered_map>
 #include <functional>
+#include <optional>
 
 using namespace std::string_view_literals;
 using namespace intercept;
@@ -323,17 +324,17 @@ namespace intercept::assembly {
 	class asshelper
 	{
 	private:
-		std::hash_map<const char*, game_value> nmap;
-		std::hash_map<const char*, std::function<int(game_value, game_value*)>> umap;
-		std::hash_map<const char*, std::function<int(game_value, game_value, game_value*)>> bmap;
+		std::unordered_map<std::string_view, game_value> nmap;
+		std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value)>> umap;
+		std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value, game_value)>> bmap;
 	public:
 		asshelper(game_state* gs);
-		bool containsNular(const char* key) const;
-		bool containsUnary(const char* key) const;
-		bool containsBinary(const char* key) const;
-		game_value get(const char* key) const;
-		int asshelper::get(game_state* gs, const char* key, ref<game_instruction> right, game_value *out) const;
-		int asshelper::get(game_state* gs, const char* key, ref<game_instruction> left, ref<game_instruction> right, game_value *out) const;
+		bool containsNular(std::string_view key) const;
+		bool containsUnary(std::string_view key) const;
+		bool containsBinary(std::string_view key) const;
+		game_value get(std::string_view key) const;
+		std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> right) const;
+		std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> left, ref<game_instruction> right) const;
 	};
     void optimize(game_state* gs, asshelper* nh, ref<compact_array<ref<game_instruction>>> instructions);
 }

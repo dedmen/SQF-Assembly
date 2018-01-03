@@ -277,11 +277,6 @@ game_value optimizeCode(uintptr_t gs, game_value_parameter code) {
     return c;
 }
 
-
-
-
-
-
 int intercept::api_version() {
     return 1;
 }
