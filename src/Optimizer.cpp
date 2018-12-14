@@ -128,6 +128,11 @@ asshelper::asshelper() {
             return {}; //#TODO test
         return game_value(static_cast<float>(left) / static_cast<float>(right));
     };
+	bmap["*"] = [](game_value left, game_value right) -> std::optional<game_value> {
+		if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR)
+			return {}; //#TODO test
+		return game_value(static_cast<float>(left) * static_cast<float>(right));
+	};
 }
 
 bool asshelper::containsNular(std::string_view key) const { return nmap.find(key) != nmap.end(); }
@@ -139,7 +144,10 @@ std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, r
     if (!isconst(gs, right))
         return {};
     auto rightval = static_cast<GameInstructionConst*>(right.get());
-    return umap.at(key)(rightval->value);
+
+	auto found = umap.find(key);
+	if (found == umap.end()) return {};
+	return found->second(rightval->value);
 }
 
 std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, ref<game_instruction> left,
@@ -148,7 +156,10 @@ std::optional<game_value> asshelper::get(game_state* gs, std::string_view key, r
         return {};
     auto leftval = static_cast<GameInstructionConst*>(left.get());
     auto rightval = static_cast<GameInstructionConst*>(right.get());
-    return bmap.at(key)(leftval->value, rightval->value);
+
+	auto found = bmap.find(key);
+	if (found == bmap.end()) return {};
+    return found->second(leftval->value, rightval->value);
 }
 
 asshelper::insttype asshelper::getinsttype(game_state* gs, ref<game_instruction> instr) {

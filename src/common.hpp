@@ -125,8 +125,13 @@ struct instructionVtable {
 class GameInstructionConst : public game_instruction {
 public:
     game_value value;
-    static const size_t typeIDHash = 0x8c0dbf90;
+#ifdef _WIN64
+	static const size_t typeIDHash = 0x0a56f03038a03360;
+#else
+	static const size_t typeIDHash = 0x8c0dbf90;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;
@@ -155,9 +160,13 @@ public:
 class GameInstructionVariable : public game_instruction {
 public:
     r_string name;
-
+#ifdef _WIN64
+	static const size_t typeIDHash = 0xa85b61c9024aa2d8;
+#else
     static const size_t typeIDHash = 0xc04f83b1;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;
@@ -181,9 +190,13 @@ public:
 class GameInstructionOperator : public game_instruction {
 public:
     const game_operators *_operators;
-
+#ifdef _WIN64
+	static const size_t typeIDHash = 0x836a8dd20c3597a3;
+#else
     static const size_t typeIDHash = 0x0ac32571;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;
@@ -212,9 +225,13 @@ public:
 class GameInstructionFunction : public game_instruction {
 public:
     const game_functions *_functions;
-
+#ifdef _WIN64
+	static const size_t typeIDHash = 0xe3939419d62ed014;
+#else
     static const size_t typeIDHash = 0x72ff7d2d;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;
@@ -244,9 +261,13 @@ public:
 class GameInstructionArray : public game_instruction {
 public:
     int size;
-
+#ifdef _WIN64
+	static const size_t typeIDHash = 0x78c75af7cdcb402d;
+#else
     static const size_t typeIDHash = 0x4b5efb7a;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;
@@ -270,9 +291,13 @@ class GameInstructionAssignment : public game_instruction {
 public:
     r_string name;
     bool forceLocal;
-
+#ifdef _WIN64
+	static const size_t typeIDHash = 0xbf6a21dcf26b1790;
+#else
     static const size_t typeIDHash = 0xd27a68ec;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;
@@ -297,9 +322,13 @@ public:
     int beg{ 0 };
     int end{ 0 };
 
-
+#ifdef _WIN64
+	static const size_t typeIDHash = 0xc1b71c54145040ff;
+#else
     static const size_t typeIDHash = 0xc2bb0eeb;
+#endif
     static inline instructionVtable defVtable;
+	static inline void* vtablePtr;
     void setVtable() {
         auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
         *reinterpret_cast<instructionVtable**>(this) = vtbl;

@@ -10,30 +10,37 @@ void prepVtables(const ref<game_instruction>& instr) {
         case GameInstructionNewExpression::typeIDHash: { //GameInstructionNewExpression
             ref<GameInstructionNewExpression> mInst = GameInstructionNewExpression::make(nullptr);
             GameInstructionNewExpression::defVtable.init(instr.get(), mInst.get());
+			GameInstructionNewExpression::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
         case GameInstructionConst::typeIDHash: { //GameInstructionConst
             ref<GameInstructionConst> mInst = GameInstructionConst::make(nullptr);
             GameInstructionConst::defVtable.init(instr.get(), mInst.get());
+			GameInstructionConst::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
         case GameInstructionFunction::typeIDHash: { //GameInstructionFunction
             ref<GameInstructionFunction> mInst = GameInstructionFunction::make(nullptr);
             GameInstructionFunction::defVtable.init(instr.get(), mInst.get());
+			GameInstructionFunction::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
         case GameInstructionOperator::typeIDHash: { //GameInstructionOperator
             ref<GameInstructionOperator> mInst = GameInstructionOperator::make(nullptr);
             GameInstructionOperator::defVtable.init(instr.get(), mInst.get());
+			GameInstructionOperator::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
         case GameInstructionAssignment::typeIDHash: { //GameInstructionAssignment
             ref<GameInstructionAssignment> mInst = GameInstructionAssignment::make(nullptr);
             GameInstructionAssignment::defVtable.init(instr.get(), mInst.get());
+			GameInstructionAssignment::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
         case GameInstructionVariable::typeIDHash: { //GameInstructionVariable
             ref<GameInstructionVariable> mInst = GameInstructionVariable::make(nullptr);
             GameInstructionVariable::defVtable.init(instr.get(), mInst.get());
+			GameInstructionVariable::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
         case GameInstructionArray::typeIDHash: { //GameInstructionArray
             ref<GameInstructionArray> mInst = GameInstructionArray::make(nullptr);
             GameInstructionArray::defVtable.init(instr.get(), mInst.get());
+			GameInstructionArray::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
 
         default: __debugbreak();
@@ -189,7 +196,7 @@ game_value decompileAssembly(uintptr_t gs, game_value_parameter code) {
     if (!c->instructions) return 0;
     std::string out;
     for (auto& it : *c->instructions) {
-        auto& type = typeid(*it.get());
+        //auto& type = typeid(*it.get());
         out += instructionToString(reinterpret_cast<game_state*>(gs), it);
         out += "\n";
     }
@@ -283,19 +290,47 @@ int intercept::api_version() {
     return 1;
 }
 
+static struct vtables {
+	void* vt_GameInstructionNewExpression;
+	void* vt_GameInstructionConst;
+	void* vt_GameInstructionFunction;
+	void* vt_GameInstructionOperator;
+	void* vt_GameInstructionAssignment;
+	void* vt_GameInstructionVariable;
+	void* vt_GameInstructionArray;
+} vtGlobal;
+
+
+void intercept::register_interfaces() {
+	
+	//That should really be done in preStart. But we need it done before people access the interface
+	auto code = sqf::compile("private _var = [1, player, player setPos[1, 2, 3], getPos player]; _var");
+	auto c = (game_data_code*) code.data.get();
+	for (auto& it : *c->instructions) {
+		prepVtables(it);
+	}
+
+	vtGlobal.vt_GameInstructionNewExpression = GameInstructionNewExpression::vtablePtr;
+	vtGlobal.vt_GameInstructionConst = GameInstructionConst::vtablePtr;
+	vtGlobal.vt_GameInstructionFunction = GameInstructionFunction::vtablePtr;
+	vtGlobal.vt_GameInstructionOperator = GameInstructionOperator::vtablePtr;
+	vtGlobal.vt_GameInstructionAssignment = GameInstructionAssignment::vtablePtr;
+	vtGlobal.vt_GameInstructionVariable = GameInstructionVariable::vtablePtr;
+	vtGlobal.vt_GameInstructionArray = GameInstructionArray::vtablePtr;
+
+	client::host::register_plugin_interface("sqf_asm_devIf", 1, &vtGlobal);
+
+}
+
 void intercept::pre_start() {
 
 
-    static auto _decompileAsm = intercept::client::host::registerFunction("decompileASM", "", decompileAssembly, GameDataType::SCALAR, GameDataType::CODE);
+    static auto _decompileAsm = intercept::client::host::register_sqf_command("decompileASM", "", decompileAssembly, game_data_type::SCALAR, game_data_type::CODE);
 
-    static auto _compileAsm = intercept::client::host::registerFunction("compileASM"sv, ""sv, compileAssembly, GameDataType::CODE, GameDataType::STRING);
-    static auto _optimizeCode = intercept::client::host::registerFunction("optimize"sv, ""sv, optimizeCode, GameDataType::CODE, GameDataType::CODE);
+    static auto _compileAsm = intercept::client::host::register_sqf_command("compileASM"sv, ""sv, compileAssembly, game_data_type::CODE, game_data_type::STRING);
+    static auto _optimizeCode = intercept::client::host::register_sqf_command("optimize"sv, ""sv, optimizeCode, game_data_type::CODE, game_data_type::CODE);
 
-    auto code = sqf::compile("_var = [1, player, player setPos[1, 2, 3], getPos player];");
-    auto c = (game_data_code*) code.data.get();
-    for (auto& it : *c->instructions) {
-        prepVtables(it);
-    }
+    
 
 
 }
