@@ -378,5 +378,5 @@ public:
     static insttype getinsttype(game_state* gs, ref<game_instruction> instr);
     bool isconst(game_state* gs, ref<game_instruction> instr) const;
     game_value getconst(game_state* gs, ref<game_instruction> instr) const;
-    std::vector<ref<game_instruction>> optimize(game_state* gs, ref<compact_array<ref<game_instruction>>> instructions);
+    std::vector<ref<game_instruction>> optimize(game_state& gs, auto_array<ref<game_instruction>>& instructions);
 };

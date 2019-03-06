@@ -80,7 +80,7 @@ std::string instructionToString(game_state* gs, const ref<game_instruction>& ins
         case GameInstructionVariable::typeIDHash: { //GameInstructionVariable
             GameInstructionVariable* inst = static_cast<GameInstructionVariable*>(instr.get());
             auto varname = inst->name;
-            if (gs->_scriptNulars.has_key(varname.c_str())) {
+            if (gs->get_script_nulars().has_key(varname.c_str())) {
                 return std::string("callNular ") + varname.c_str() + ";";
             } else {
                 return std::string("getVariable ") + varname.c_str() + ";";
@@ -145,8 +145,8 @@ ref<GameInstructionFunction> parseFunction(game_state* gs, std::string_view& cns
     cnst = cnst.substr(type.length() + 1);
 
     std::string name(type);
-    auto& f = gs->_scriptFunctions.get(name.data());
-    if (gs->_scriptFunctions.is_null(f)) return nullptr;
+    auto& f = gs->get_script_functions().get(name.data());
+    if (gs->get_script_functions().is_null(f)) return nullptr;
 
     return GameInstructionFunction::make(&f);
 }
@@ -156,9 +156,9 @@ ref<GameInstructionOperator> parseOperator(game_state* gs, std::string_view& cns
     cnst = cnst.substr(type.length() + 1);
 
     std::string name(type);
-    auto tb = gs->_scriptOperators.get_table_for_key(name.data());
-    auto& f = gs->_scriptOperators.get(type.data());
-    if (gs->_scriptOperators.is_null(f)) return nullptr;
+    auto tb = gs->get_script_operators().get_table_for_key(name.data());
+    auto& f = gs->get_script_operators().get(type.data());
+    if (gs->get_script_operators().is_null(f)) return nullptr;
     return nullptr;
 
 }
@@ -190,22 +190,21 @@ void skipWhitespace(std::string_view& str) {
         str = str.substr(1);
 }
 
-game_value decompileAssembly(uintptr_t gs, game_value_parameter code) {
+game_value decompileAssembly(game_state& gs, game_value_parameter code) {
     if (code.is_nil()) return 0;
     auto c = (game_data_code*) code.data.get();
-    if (!c->instructions) return 0;
+    if (c->instructions.empty()) return 0;
     std::string out;
-    for (auto& it : *c->instructions) {
+    for (auto& it : c->instructions) {
         //auto& type = typeid(*it.get());
-        out += instructionToString(reinterpret_cast<game_state*>(gs), it);
+        out += instructionToString(&gs, it);
         out += "\n";
     }
 
     return out;
 }
 
-game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
-    auto gamestate = (game_state*) gs;
+game_value compileAssembly(game_state& gamestate, game_value_parameter code) {
     std::string_view cd = (r_string) code;
     std::vector<ref<game_instruction>> instr;
 
@@ -219,25 +218,25 @@ game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
             auto cnst = parseConst(cd);
             instr.emplace_back(cnst);
         } else if (type == "callFunction") {
-            auto cnst = parseFunction(gamestate, cd);
+            auto cnst = parseFunction(&gamestate, cd);
             instr.emplace_back(cnst);
         } else if (type == "callOperator") {
-            auto cnst = parseOperator(gamestate, cd);
+            auto cnst = parseOperator(&gamestate, cd);
             instr.emplace_back(cnst);
         } else if (type == "getVariable") {
-            auto cnst = parseVariable(gamestate, cd);
+            auto cnst = parseVariable(&gamestate, cd);
             instr.emplace_back(cnst);
         } else if (type == "callNular") {
-            auto cnst = parseVariable(gamestate, cd);
+            auto cnst = parseVariable(&gamestate, cd);
             instr.emplace_back(cnst);
         } else if (type == "assignToLocal") {
-            auto cnst = parseAssign(gamestate, cd, true);
+            auto cnst = parseAssign(&gamestate, cd, true);
             instr.emplace_back(cnst);
         } else if (type == "assignTo") {
-            auto cnst = parseAssign(gamestate, cd, false);
+            auto cnst = parseAssign(&gamestate, cd, false);
             instr.emplace_back(cnst);
         } else if (type == "makeArray") {
-            auto cnst = parseArray(gamestate, cd, false);
+            auto cnst = parseArray(&gamestate, cd, false);
             instr.emplace_back(cnst);
         } else if (type == "endStatement;") {
             auto cnst = GameInstructionNewExpression::make();
@@ -252,9 +251,9 @@ game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
 
     auto compiled = static_cast<game_data_code*>(c.data.get());
     compiled->code_string = code;
-    compiled->instructions = compact_array<ref<game_instruction>>::create_zero(instr.size());
+    compiled->instructions.resize(instr.size());
 
-    auto& arr = *compiled->instructions;
+    auto& arr = compiled->instructions;
 
     uint32_t idx = 0;
     for (auto& it : instr) {
@@ -267,8 +266,7 @@ game_value compileAssembly(uintptr_t gs, game_value_parameter code) {
 
 
 
-game_value optimizeCode(uintptr_t gs, game_value_parameter code) {
-    auto gamestate = (game_state*) gs;
+game_value optimizeCode(game_state& gamestate, game_value_parameter code) {
     auto origCode = static_cast<game_data_code*>(code.data.get());
 
  
@@ -282,7 +280,7 @@ game_value optimizeCode(uintptr_t gs, game_value_parameter code) {
 
 
 
-    compiled->instructions = compact_array<ref<game_instruction>>::create(newInstructions.begin(), newInstructions.end());
+    compiled->instructions = auto_array<ref<game_instruction>>(newInstructions.begin(), newInstructions.end());
     return c;
 }
 
@@ -306,7 +304,7 @@ void intercept::register_interfaces() {
 	//That should really be done in preStart. But we need it done before people access the interface
 	auto code = sqf::compile("private _var = [1, player, player setPos[1, 2, 3], getPos player]; _var");
 	auto c = (game_data_code*) code.data.get();
-	for (auto& it : *c->instructions) {
+	for (auto& it : c->instructions) {
 		prepVtables(it);
 	}
 

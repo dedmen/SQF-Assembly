@@ -6,7 +6,7 @@ find_package (Threads)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 include(${PROJECT_SOURCE_DIR}/CMakeModules/cxx_compiler_functions.cmake)
 
-option(USE_64BIT_BUILD "USE_64BIT_BUILD" OFF)
+set(USE_64BIT_BUILD ${CMAKE_CL_64})
 option(USE_STATIC_LINKING "USE_STATIC_LINKING" ON)
 
 if(USE_STATIC_LINKING) 
@@ -31,9 +31,6 @@ elseif("${CMAKE_GENERATOR}" MATCHES "Ninja")
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
 	message(FATAL_ERROR "ERROR: You need a C++17 compatible compiler")
 endif()
-
-
-set(CMAKE_CL_64 ${USE_64BIT_BUILD})
 
 if(USE_64BIT_BUILD)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/win64/")

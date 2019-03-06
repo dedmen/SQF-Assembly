@@ -186,7 +186,7 @@ asshelper::insttype asshelper::getinsttype(game_state* gs, ref<game_instruction>
         case GameInstructionVariable::typeIDHash: {
             GameInstructionVariable* inst = static_cast<GameInstructionVariable*>(instr.get());
             auto varname = inst->name;
-            if (gs->_scriptNulars.has_key(varname.c_str())) {
+            if (gs->get_script_nulars().has_key(varname.c_str())) {
                 return insttype::callNular;
             } else {
                 return insttype::getVariable;
@@ -222,15 +222,15 @@ game_value asshelper::getconst(game_state* gs, ref<game_instruction> instr) cons
     }
 }
 
-std::vector<ref<game_instruction>> asshelper::optimize(game_state* gs,
-                                                       ref<compact_array<ref<game_instruction>>> instructionsInput) {
+std::vector<ref<game_instruction>> asshelper::optimize(game_state& gs,
+                                                       auto_array<ref<game_instruction>>& instructionsInput) {
     std::vector<ref<game_instruction>> instructions;
-    instructions.reserve(instructionsInput->size());
+    instructions.reserve(instructionsInput.size());
 
-    for (auto& it : *instructionsInput)
+    for (auto& it : instructionsInput)
         instructions.emplace_back(std::move(it));
 
-    const auto hasNConstValues = [this, gs, &instructions](size_t offset, size_t numberOfConsts) {
+    const auto hasNConstValues = [this, gs = &gs, &instructions](size_t offset, size_t numberOfConsts) {
         if (numberOfConsts > offset) return false;
         for (size_t i = offset - numberOfConsts; i < offset; ++i) {
             if (!isconst(gs, instructions[i])) return false;
@@ -241,7 +241,7 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state* gs,
     for (size_t i = 0; i < instructions.size(); i++) {
         auto& instr = instructions[i];
         //GameInstructionConst::make(array);
-        switch (getinsttype(gs, instr)) {
+        switch (getinsttype(&gs, instr)) {
             case insttype::makeArray: {
                 auto inst = static_cast<GameInstructionArray*>(instr.get());
                 size_t arrsize = inst->size;
@@ -257,7 +257,7 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state* gs,
                 //Backtrack - Add elements to array
                 auto_array<game_value> arr;
                 for (size_t j = i - arrsize; j < i; ++j) {
-                    arr.emplace_back(getconst(gs, instructions[j]));
+                    arr.emplace_back(getconst(&gs, instructions[j]));
                 }
                 instructions.erase(instructions.begin() + i - arrsize, instructions.begin() + i); //#TODO check
                 i -= arrsize - 1;
@@ -266,7 +266,7 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state* gs,
                 break;
             case insttype::callUnary: {
                 auto inst = static_cast<GameInstructionFunction*>(instr.get());
-                auto newValue = get(gs, inst->getFuncName().c_str(), instructions[i - 1]);
+                auto newValue = get(&gs, inst->getFuncName().c_str(), instructions[i - 1]);
                 if (newValue) {
                     i -= 1;
                     instructions[i] = GameInstructionConst::make(std::move(*newValue));
@@ -276,7 +276,7 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state* gs,
             case insttype::callBinary: {
                 auto inst = static_cast<GameInstructionFunction*>(instr.get());
                 game_value valueslot;
-                auto newValue = get(gs, inst->getFuncName().c_str(), instructions[i - 2],
+                auto newValue = get(&gs, inst->getFuncName().c_str(), instructions[i - 2],
                                     instructions[i - 1]);
                 if (newValue) {
                     i -= 2;
@@ -294,7 +294,7 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state* gs,
 
                     auto newInstructions = optimize(gs, compiled->instructions);
 
-                    compiled->instructions = compact_array<ref<game_instruction>>::create(newInstructions.begin(), newInstructions.end());
+                    compiled->instructions = auto_array<ref<game_instruction>>(newInstructions.begin(), newInstructions.end());
                     //#TODO test
                 }
             }
