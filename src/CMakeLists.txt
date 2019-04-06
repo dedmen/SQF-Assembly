@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.0)
 
 set(INTERCEPT_CLIENT_PATH "${CMAKE_SOURCE_DIR}/intercept/src/client")
 
-set(INTERCEPT_INCLUDE_PATH "${INTERCEPT_CLIENT_PATH}/headers" "${INTERCEPT_CLIENT_PATH}/headers/client/" "${INTERCEPT_CLIENT_PATH}/headers/client/sqf")
+set(INTERCEPT_INCLUDE_PATH "${INTERCEPT_CLIENT_PATH}/headers" "${INTERCEPT_CLIENT_PATH}/headers/client/" "${INTERCEPT_CLIENT_PATH}/headers/client/sqf" "${CMAKE_SOURCE_DIR}/intercept/src/host")
 
 
 if(USE_64BIT_BUILD)
@@ -86,3 +86,11 @@ else()
 	target_link_options(${INTERCEPT_PLUGIN_NAME} PRIVATE "/OPT:REF" "/OPT:ICF" "/DEBUG:FULL") 
 endif()
 
+#Binary signing
+if(EXISTS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/sign.bat" AND MSVC)
+	add_custom_command(TARGET ${INTERCEPT_PLUGIN_NAME}
+		POST_BUILD
+		COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/sign.bat
+		WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+	)
+endif()

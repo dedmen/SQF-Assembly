@@ -1,5 +1,5 @@
 #include "common.hpp"
-
+#include "BytecodeLoader.hpp"
 
 
 void prepVtables(const ref<game_instruction>& instr) {
@@ -285,7 +285,7 @@ game_value optimizeCode(game_state& gamestate, game_value_parameter code) {
 }
 
 int intercept::api_version() {
-    return 1;
+    return INTERCEPT_SDK_API_VERSION;
 }
 
 static struct vtables {
@@ -321,7 +321,7 @@ void intercept::register_interfaces() {
 }
 
 void intercept::pre_start() {
-
+    BytecodeLoader::get().preStart();
 
     static auto _decompileAsm = intercept::client::host::register_sqf_command("decompileASM", "", decompileAssembly, game_data_type::SCALAR, game_data_type::CODE);
 
@@ -332,3 +332,5 @@ void intercept::pre_start() {
 
 
 }
+
+
