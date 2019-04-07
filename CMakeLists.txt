@@ -49,4 +49,12 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 
 
+set(LIBRARY_PATH_ZSTD "${CMAKE_SOURCE_DIR}/ArmaScriptCompiler/lib/zstd")
+
+SET(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "no programs" FORCE)
+set(ZSTD_USE_STATIC_RUNTIME ON CACHE BOOL "yes" FORCE)
+set(ZSTD_BUILD_SHARED OFF CACHE BOOL "no" FORCE)
+
+add_subdirectory("${LIBRARY_PATH_ZSTD}/build/cmake")
+
 add_subdirectory(src)

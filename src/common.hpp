@@ -105,10 +105,13 @@ using namespace intercept::__internal;
 
 struct instructionVtable {
     void* vtbl[8];
+    void* fullt;
 
     void init(game_instruction* engine, game_instruction* intercept) {
         auto in = *reinterpret_cast<instructionVtable**>(intercept);
         auto en = *reinterpret_cast<instructionVtable**>(engine);
+
+        fullt = en;
 
         vtbl[0] = en->vtbl[-1];
         vtbl[1] = in->vtbl[0];
@@ -118,9 +121,16 @@ struct instructionVtable {
         vtbl[5] = en->vtbl[4];
         vtbl[6] = en->vtbl[5];
         vtbl[7] = en->vtbl[6];
+
+
     }
 };
 
+#define VTABLESETTER \
+auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);\
+*reinterpret_cast<instructionVtable**>(this) = vtbl;
+
+//*reinterpret_cast<void**>(this) = defVtable.fullt;
 
 class GameInstructionConst : public game_instruction {
 public:
@@ -133,8 +143,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
 
@@ -168,8 +177,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
     GameInstructionVariable() { setVtable(); }
@@ -198,8 +206,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
     template<class... _Types>
@@ -233,8 +240,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
     template<class... _Types>
@@ -269,8 +275,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
     template<class... _Types>
@@ -299,8 +304,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
     template<class... _Types>
@@ -330,8 +334,7 @@ public:
     static inline instructionVtable defVtable;
 	static inline void* vtablePtr;
     void setVtable() {
-        auto vtbl = reinterpret_cast<instructionVtable*>(&defVtable.vtbl[1]);
-        *reinterpret_cast<instructionVtable**>(this) = vtbl;
+        VTABLESETTER
     }
 
     template<class... _Types>

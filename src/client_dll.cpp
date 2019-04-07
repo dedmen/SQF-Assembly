@@ -59,36 +59,48 @@ std::string instructionToString(game_state* gs, const ref<game_instruction>& ins
         } break;
         case GameInstructionConst::typeIDHash: { //GameInstructionConst
             GameInstructionConst* inst = static_cast<GameInstructionConst*>(instr.get());
-            return std::string("push ") + inst->value.data->type_as_string() + " " + inst->value.data->to_string().c_str() + ";";
+            auto ret = std::string("push ") + inst->value.data->type_as_string();
+
+            if (inst->value.data->type_as_string()=="code"sv) {
+                ret += " {\n";
+                
+                for (auto& it : inst->value.get_as<game_data_code>()->instructions)
+                    ret += instructionToString(gs, it)+"\n";
+                ret += "};(" + std::to_string(inst->sdp.sourceline);
+            } else {
+                ret += std::string(" ") + inst->value.data->to_string().c_str() + ";(" + std::to_string(inst->sdp.sourceline);
+            }
+
+            return ret;
         } break;
         case GameInstructionFunction::typeIDHash: { //GameInstructionFunction
             GameInstructionFunction* inst = static_cast<GameInstructionFunction*>(instr.get());
-            return std::string("callFunction ") + inst->getFuncName().c_str() + ";";
+            return std::string("callFunction ") + inst->getFuncName().c_str() + ";(" + std::to_string(inst->sdp.sourceline);
         } break;
         case GameInstructionOperator::typeIDHash: { //GameInstructionOperator
             GameInstructionOperator* inst = static_cast<GameInstructionOperator*>(instr.get());
-            return std::string("callOperator ") + inst->getFuncName().c_str() + ";";
+            return std::string("callOperator ") + inst->getFuncName().c_str() + ";(" + std::to_string(inst->sdp.sourceline);
         } break;
         case GameInstructionAssignment::typeIDHash: { //GameInstructionAssignment
             GameInstructionAssignment* inst = static_cast<GameInstructionAssignment*>(instr.get());
             if (inst->forceLocal) {
-                return std::string("assignToLocal ") + inst->name.c_str() + ";";
+                return std::string("assignToLocal ") + inst->name.c_str() + ";(" + std::to_string(inst->sdp.sourceline);
             } else {
-                return std::string("assignTo ") + inst->name.c_str() + ";";
+                return std::string("assignTo ") + inst->name.c_str() + ";(" + std::to_string(inst->sdp.sourceline);
             }
         } break;
         case GameInstructionVariable::typeIDHash: { //GameInstructionVariable
             GameInstructionVariable* inst = static_cast<GameInstructionVariable*>(instr.get());
             auto varname = inst->name;
             if (gs->get_script_nulars().has_key(varname.c_str())) {
-                return std::string("callNular ") + varname.c_str() + ";";
+                return std::string("callNular ") + varname.c_str() + ";(" + std::to_string(inst->sdp.sourceline);
             } else {
-                return std::string("getVariable ") + varname.c_str() + ";";
+                return std::string("getVariable ") + varname.c_str() + ";(" + std::to_string(inst->sdp.sourceline);
             }
         } break;
         case GameInstructionArray::typeIDHash: { //GameInstructionArray
             GameInstructionArray* inst = static_cast<GameInstructionArray*>(instr.get());
-            return std::string("makeArray ") + std::to_string(inst->size) + ";";
+            return std::string("makeArray ") + std::to_string(inst->size) + ";(" + std::to_string(inst->sdp.sourceline);
         } break;
 
         default: __debugbreak();

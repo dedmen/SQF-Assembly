@@ -2,8 +2,17 @@ cmake_minimum_required (VERSION 3.0)
 
 set(INTERCEPT_CLIENT_PATH "${CMAKE_SOURCE_DIR}/intercept/src/client")
 
-set(INTERCEPT_INCLUDE_PATH "${INTERCEPT_CLIENT_PATH}/headers" "${INTERCEPT_CLIENT_PATH}/headers/client/" "${INTERCEPT_CLIENT_PATH}/headers/client/sqf" "${CMAKE_SOURCE_DIR}/intercept/src/host")
+set(LIBRARY_PATH_ZSTD "${CMAKE_SOURCE_DIR}/ArmaScriptCompiler/lib/zstd")
 
+set(INTERCEPT_INCLUDE_PATH 
+"${INTERCEPT_CLIENT_PATH}/headers"
+"${INTERCEPT_CLIENT_PATH}/headers/client/"
+"${INTERCEPT_CLIENT_PATH}/headers/client/sqf"
+"${CMAKE_SOURCE_DIR}/intercept/src/host"
+"${CMAKE_SOURCE_DIR}/ArmaScriptCompiler/src"
+"${CMAKE_SOURCE_DIR}/ArmaScriptCompiler/lib/cpp-base64"
+"${LIBRARY_PATH_ZSTD}/lib"
+)
 
 if(USE_64BIT_BUILD)
     set(INTERCEPT_PLUGIN_NAME "sqf-assembly_x64")
@@ -16,6 +25,7 @@ add_definitions(/DINTERCEPT_NO_THREAD_SAFETY)
 add_definitions(/DNOMINMAX)
 add_definitions(/DINTERCEPT_SQF_STRTYPE_RSTRING)
 add_definitions(/D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS) #No I don't cheat!
+add_definitions(/DASC_INTERCEPT)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/rv/${INTERCEPT_PLUGIN_NAME}/intercept")
 
@@ -23,7 +33,8 @@ file(GLOB INTERCEPT_SOURCES "${INTERCEPT_CLIENT_PATH}/intercept/client/*.cpp"  "
 SOURCE_GROUP("intercept" FILES ${INTERCEPT_SOURCES})
 
 
-
+file(GLOB COMPILER_SOURCES "${CMAKE_SOURCE_DIR}/ArmaScriptCompiler/src/scriptSerializer.cpp" "${CMAKE_SOURCE_DIR}/ArmaScriptCompiler/lib/cpp-base64/base64.cpp")
+SOURCE_GROUP("scriptCompiler" FILES ${COMPILER_SOURCES})
 
 
 
@@ -32,11 +43,11 @@ SOURCE_GROUP("src" FILES ${INTERCEPT_SQFASM_SOURCES})
 
 set(library_sources ${INTERCEPT_SQFASM_SOURCES})
 
-add_library( ${INTERCEPT_PLUGIN_NAME} SHARED ${library_sources} ${INTERCEPT_SOURCES} ${INTERCEPT_SQFASM_SQF_EXT_SOURCES})
+add_library( ${INTERCEPT_PLUGIN_NAME} SHARED ${library_sources} ${INTERCEPT_SOURCES} ${INTERCEPT_SQFASM_SQF_EXT_SOURCES} ${COMPILER_SOURCES})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${INTERCEPT_INCLUDE_PATH} )
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${INTERCEPT_INCLUDE_PATH} "${LIBRARY_PATH_ZSTD}/lib")
 
-target_link_libraries (${INTERCEPT_PLUGIN_NAME} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${INTERCEPT_PLUGIN_NAME} ${CMAKE_THREAD_LIBS_INIT} libzstd_static)
 
 target_link_libraries(${INTERCEPT_PLUGIN_NAME} ${LINK_LIBS})
 set_target_properties(${INTERCEPT_PLUGIN_NAME} PROPERTIES PREFIX "")
