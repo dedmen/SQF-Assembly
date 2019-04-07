@@ -20,8 +20,6 @@ public:
     bool get_as_bool() const override { return true; }
     float get_as_number() const override { return 0.f; }
     const r_string& get_as_string() const override { 
-        auto gs = intercept::client::host::functions.get_engine_allocator()->gameState;
-
         if (!preprocCache.empty()) return preprocCache;
         preprocCache = intercept::sqf::preprocess_file_line_numbers(originalFilePath);
 
@@ -34,7 +32,13 @@ public:
 
         return preprocCache;
     }
-    //virtual bool equals(const game_data*) const override;
+    virtual bool equals(const game_data* equ) const override {
+        auto x = (game_data_code*)equ;
+        auto y = (game_data_string*)equ;
+
+
+        return false;
+    }
     const char* type_as_string() const override { return "bytecode"; }
     bool is_nil() const override { return false; }
     bool can_serialize() override { return true; }//Setting this to false causes a fail in scheduled and global vars
@@ -59,14 +63,41 @@ game_data* createGameDataBytecode(param_archive* ar) {
 
 extern std::string instructionToString(game_state* gs, const ref<game_instruction>& instr);
 
+game_data_code* getNewCode(bool final = false) {
+    static game_value_static normalCode{1};
+    static game_value_static finalCode{1};
 
-game_value buildCodeInstructions(const CompiledCodeData& data, const std::vector<ScriptInstruction>& inst, r_string originalPath, bool final = false) {
+    if (final) {
+        if (finalCode.type_enum() != game_data_type::SCALAR)
+            return reinterpret_cast<game_data_code*>(finalCode.get_as<game_data_code>()->copy());
+        finalCode = sqf::compile_final("");
+        return reinterpret_cast<game_data_code*>(finalCode.get_as<game_data_code>()->copy());
+    } else {
+        if (normalCode.type_enum() != game_data_type::SCALAR)
+            return reinterpret_cast<game_data_code*>(normalCode.get_as<game_data_code>()->copy());
+        normalCode = sqf::compile("");
+        return reinterpret_cast<game_data_code*>(normalCode.get_as<game_data_code>()->copy());
+    }
+}
+
+
+
+game_value buildCodeInstructions(const CompiledCodeData& data, const ScriptCodePiece& inst, r_string originalPath, bool final = false) {
     auto gs = intercept::client::host::functions.get_engine_allocator()->gameState;
+
     auto_array<ref<game_instruction>> instructions;
-    instructions.reserve(inst.size());
-    auto temp = intercept::sqf::preprocess_file_line_numbers(originalPath); //#TODO seperate compiled code combo type that returns preproced file on to_string
+    instructions.reserve(inst.code.size());
+    r_string content;
+    auto contentStringIndex = std::get<0>(data.constants[data.codeIndex]).contentString;
+    r_string fileContent = std::get<STRINGTYPE>(data.constants[contentStringIndex]);
+    if (inst.contentSplit.isOffset) {
+        content = fileContent.substr(inst.contentSplit.offset, inst.contentSplit.length);
+    } else {
+        content = fileContent;
+    }
+
     int line = 0;
-    for (auto& it : inst) {
+    for (auto& it : inst.code) {
         switch (it.type) {
 
         case InstructionType::endStatement:
@@ -83,8 +114,8 @@ game_value buildCodeInstructions(const CompiledCodeData& data, const std::vector
         } break;
         case InstructionType::callBinary: {
             r_string name = std::get<0>(it.content);
-            auto fnc = &gs->get_script_operators().get(name);
-            instructions.emplace_back(GameInstructionOperator::make(fnc));
+            auto& fnc = gs->get_script_operators().get(name);
+            instructions.emplace_back(GameInstructionOperator::make(&fnc));
         } break;
         case InstructionType::callNular: {
             r_string name = std::get<0>(it.content);
@@ -107,18 +138,17 @@ game_value buildCodeInstructions(const CompiledCodeData& data, const std::vector
             break;
         default:;
         }
-        instructions.back()->sdp.pos = 0;
+        instructions.back()->sdp.pos = it.offset;
         instructions.back()->sdp.sourcefile = data.fileNames[it.fileIndex];
-        instructions.back()->sdp.content = temp;
-        instructions.back()->sdp.sourceline = line++;
+        instructions.back()->sdp.content = fileContent;
+        instructions.back()->sdp.sourceline = it.line;
 
     }
 
-    auto newCode = new game_data_code();
+    auto newCode = getNewCode(final);
     newCode->instructions = std::move(instructions);
     //auto file = data.fileNames[inst.front().fileIndex];
-    newCode->code_string = temp;
-    newCode->is_final = final;
+    newCode->code_string = content;
 
     return newCode;
 }
@@ -140,7 +170,7 @@ game_value buildCode(CompiledCodeData data, r_string originalPath, bool final = 
     for (auto& it : data.constants) {
         data.builtConstants.emplace_back(buildConstant(data, it, originalPath));
     }
-    return buildCodeInstructions(data, data.instructions, originalPath, final);
+    return buildCodeInstructions(data, std::get<0>(data.constants[data.codeIndex]), originalPath, final);
 }
 
 game_value fileExists_sqf(game_state& gamestate, game_value_parameter filename) {
@@ -153,7 +183,9 @@ std::string toASM(game_state& gamestate, game_data_code* newCode) {
     std::string out;
     for (auto& it : newCode->instructions) {
         //auto& type = typeid(*it.get());
-        out += instructionToString(&gamestate, it);
+        auto res = instructionToString(&gamestate, it);
+        if (res.empty() < 3) continue;
+        out += res;
         out += "\n";
     }
     return out;
@@ -168,26 +200,26 @@ game_value compile(game_state& gamestate, game_value_parameter bytecode) {
 
     auto inputFile = bc->binPath.string();
 
-
     auto encodedBytecode = intercept::sqf::load_file(inputFile);
 
     auto decoded = base64_decode(encodedBytecode);
-    std::istringstream str(decoded);
-    auto code = ScriptSerializer::binaryToCompiledCompressed(str);
+    auto code = ScriptSerializer::binaryToCompiledCompressed(decoded);
 
     auto res = buildCode(std::move(code), bc->originalFilePath);
 
-    auto a1 = intercept::sqf::compile(bytecode);
-
-    auto b1 = a1.get_as<game_data_code>();
-    auto b2 = res.get_as<game_data_code>();
-
-    auto c1 = toASM(gamestate, b1);
-    auto c2 = toASM(gamestate, b2);
-
-
-
-
+    //auto a1 = intercept::sqf::compile(bytecode);
+    //
+    //auto b1 = a1.get_as<game_data_code>();
+    //auto b2 = res.get_as<game_data_code>();
+    //
+    //auto c1 = toASM(gamestate, b1);
+    //auto c2 = toASM(gamestate, b2);
+    //
+    //if (c1.substr(0, strlen("endStatement;\nendStatement;\n")) == "endStatement;\nendStatement;\n"sv)
+    //    c1 = c1.substr(strlen("endStatement;\n"));
+    //
+    //if (inputFile.find("cba") == std::string::npos)
+    //    if (c1 != c2) __debugbreak();
 
 
     return res;
@@ -206,17 +238,21 @@ game_value compileF(game_state& gamestate, game_value_parameter bytecode) {
     auto encodedBytecode = intercept::sqf::load_file(inputFile);
 
     auto decoded = base64_decode(encodedBytecode);
-    std::istringstream str(decoded);
-    auto code = ScriptSerializer::binaryToCompiledCompressed(str);
+    auto code = ScriptSerializer::binaryToCompiledCompressed(decoded);
 
     auto res = buildCode(std::move(code), bc->originalFilePath, true);
-    auto a1 = intercept::sqf::compile(bytecode);
-
-    auto b1 = a1.get_as<game_data_code>();
-    auto b2 = res.get_as<game_data_code>();
-
-    auto c1 = toASM(gamestate, b1);
-    auto c2 = toASM(gamestate, b2);
+    //auto a1 = intercept::sqf::compile(bytecode);
+    //
+    //auto b1 = a1.get_as<game_data_code>();
+    //auto b2 = res.get_as<game_data_code>();
+    //
+    //auto c1 = toASM(gamestate, b1);
+    //auto c2 = toASM(gamestate, b2);
+    //
+    //if (c1.substr(0, strlen("endStatement;\nendStatement;\n")) == "endStatement;\nendStatement;\n"sv)
+    //    c1 = c1.substr(strlen("endStatement;\n"));
+    //if (inputFile.find("cba") == std::string::npos)
+    //    if (c1 != c2) __debugbreak();
 
     return res;
 }
@@ -241,9 +277,6 @@ game_value preprocFile(game_state& gamestate, game_value_parameter filename) {
     std::filesystem::path path(name.c_str());
     auto newPath = path.parent_path() / (path.stem().string() + ".sqfc");
     if (BytecodeLoader::get().fileExists(newPath.string().c_str())) {
-
-        if (name.find("settings") != std::string::npos) __debugbreak();
-
         auto newT = new GameDataBytecode();
         newT->originalFilePath = name;
         newT->binPath = newPath;
