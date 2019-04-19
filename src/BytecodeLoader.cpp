@@ -4,8 +4,6 @@
 #include <filesystem>
 #include <base64.h>
 #include <sstream>
-#define ASC_INTERCEPT
-#include <scriptSerializer.hpp>
 #include "common.hpp"
 
 static sqf_script_type Compound_string_bytecode_type;
@@ -82,7 +80,7 @@ game_data_code* getNewCode(bool final = false) {
 
 
 
-game_value buildCodeInstructions(const CompiledCodeData& data, const ScriptCodePiece& inst, r_string originalPath, bool final = false) {
+game_value BytecodeLoader::buildCodeInstructions(const CompiledCodeData& data, const ScriptCodePiece& inst, r_string originalPath, bool final) const {
     auto gs = intercept::client::host::functions.get_engine_allocator()->gameState;
 
     auto_array<ref<game_instruction>> instructions;
@@ -105,22 +103,28 @@ game_value buildCodeInstructions(const CompiledCodeData& data, const ScriptCodeP
             break;
         case InstructionType::push: {
             auto index = std::get<1>(it.content);
-            instructions.emplace_back(GameInstructionConst::make(data.builtConstants[index]));
+            instructions.emplace_back(GameInstructionConst::make(data.builtConstants[index])); //#TODO push of type array must be custom instruction that copies array on access
         } break;
         case InstructionType::callUnary: {
             r_string name = std::get<0>(it.content);
-            auto fnc = &gs->get_script_functions().get(name);
-            instructions.emplace_back(GameInstructionFunction::make(fnc));
+            if (!optimizer.onUnary(name, instructions)) {
+                auto fnc = &gs->get_script_functions().get(name);
+                instructions.emplace_back(GameInstructionFunction::make(fnc));
+            }
         } break;
         case InstructionType::callBinary: {
             r_string name = std::get<0>(it.content);
-            auto& fnc = gs->get_script_operators().get(name);
-            instructions.emplace_back(GameInstructionOperator::make(&fnc));
+            if (!optimizer.onBinary(name, instructions)) {
+                auto& fnc = gs->get_script_operators().get(name);
+                instructions.emplace_back(GameInstructionOperator::make(&fnc));
+            }
         } break;
         case InstructionType::callNular: {
             r_string name = std::get<0>(it.content);
-            //auto fnc = &gs->get_script_nulars().get(name);
-            instructions.emplace_back(GameInstructionVariable::make(name));
+            if (!optimizer.onNular(name, instructions)) {
+                //auto fnc = &gs->get_script_nulars().get(name);
+                instructions.emplace_back(GameInstructionVariable::make(name));
+            }
         } break;
         case InstructionType::assignTo:
             instructions.emplace_back(GameInstructionAssignment::make(std::get<0>(it.content), false));
@@ -153,7 +157,7 @@ game_value buildCodeInstructions(const CompiledCodeData& data, const ScriptCodeP
     return newCode;
 }
 
-game_value buildConstant(const CompiledCodeData& data, const ScriptConstant& cnst, r_string originalPath) {
+game_value BytecodeLoader::buildConstant(const CompiledCodeData& data, const ScriptConstant& cnst, r_string originalPath) const {
     switch (getConstantType(cnst)) {
         case ConstantType::code: return buildCodeInstructions(data, std::get<0>(cnst), originalPath);
         case ConstantType::string: return std::get<1>(cnst);
@@ -165,7 +169,7 @@ game_value buildConstant(const CompiledCodeData& data, const ScriptConstant& cns
 }
 
 
-game_value buildCode(CompiledCodeData data, r_string originalPath, bool final = false) {
+game_value BytecodeLoader::buildCode(CompiledCodeData data, r_string originalPath, bool final) const {
     data.builtConstants.reserve(data.constants.size());
     for (auto& it : data.constants) {
         data.builtConstants.emplace_back(buildConstant(data, it, originalPath));
@@ -204,8 +208,8 @@ game_value compile(game_state& gamestate, game_value_parameter bytecode) {
 
     auto decoded = base64_decode(encodedBytecode);
     auto code = ScriptSerializer::binaryToCompiledCompressed(decoded);
-
-    auto res = buildCode(std::move(code), bc->originalFilePath);
+    
+    auto res = BytecodeLoader::get().buildCode(std::move(code), bc->originalFilePath);
 
     //auto a1 = intercept::sqf::compile(bytecode);
     //
@@ -240,7 +244,7 @@ game_value compileF(game_state& gamestate, game_value_parameter bytecode) {
     auto decoded = base64_decode(encodedBytecode);
     auto code = ScriptSerializer::binaryToCompiledCompressed(decoded);
 
-    auto res = buildCode(std::move(code), bc->originalFilePath, true);
+    auto res = BytecodeLoader::get().buildCode(std::move(code), bc->originalFilePath, true);
     //auto a1 = intercept::sqf::compile(bytecode);
     //
     //auto b1 = a1.get_as<game_data_code>();
@@ -294,6 +298,7 @@ HookManager::Pattern fileExistsPat{
 
 
 void BytecodeLoader::preStart() {
+    optimizer.init();
 
     HookManager manager;
     fileExistsInt = (bool (*)(const char*,context*))manager.findPattern(fileExistsPat);

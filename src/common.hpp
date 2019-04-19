@@ -8,6 +8,7 @@
 
 using namespace std::string_view_literals;
 using namespace intercept;
+using namespace intercept::types;
 
 
 namespace intercept::__internal {
