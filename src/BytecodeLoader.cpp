@@ -102,6 +102,8 @@ game_value BytecodeLoader::buildCodeInstructions(const CompiledCodeData& data, c
             instructions.emplace_back(GameInstructionNewExpression::make());
             break;
         case InstructionType::push: {
+            //#TODO if we push an array, we need to push a callUnary operator `+` to make sure it's copied.
+            //Unless next instruction is something like params or forEach
             auto index = std::get<1>(it.content);
             instructions.emplace_back(GameInstructionConst::make(data.builtConstants[index])); //#TODO push of type array must be custom instruction that copies array on access
         } break;
@@ -163,6 +165,14 @@ game_value BytecodeLoader::buildConstant(const CompiledCodeData& data, const Scr
         case ConstantType::string: return std::get<1>(cnst);
         case ConstantType::scalar: return std::get<2>(cnst);
         case ConstantType::boolean:return std::get<3>(cnst);
+        case ConstantType::array: {
+            const ScriptConstantArray& arr = std::get<4>(cnst);
+            auto_array<game_value> arrg;
+            arrg.reserve(arr.content.size());
+            for (auto& it : arr.content)
+                arrg.emplace_back(buildConstant(data, it, originalPath));
+            return arrg;
+        }
         default: ;
     }
     __debugbreak();

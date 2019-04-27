@@ -2,7 +2,6 @@
 #include <intercept.hpp>
 
 void BytecodeOptimizer::init() {
-    return;
     nmap["missionnamespace"] = sqf::mission_namespace();
     nmap["uinamespace"] = sqf::ui_namespace();
     nmap["parsingnamespace"] = sqf::parsing_namespace();
@@ -103,23 +102,23 @@ void BytecodeOptimizer::init() {
     };
 
 
-    //bmap[">>"] = [](auto_array<ref<game_instruction>> & instructions) -> bool {
-    //    auto left = static_cast<GameInstructionConst*>((instructions.end()-2)->get())->value;
-    //    auto right = static_cast<GameInstructionConst*>(instructions.back().get())->value;
-    //
-    //
-    //    if (left.type_enum() != types::game_data_type::CONFIG || right.type_enum() != types::game_data_type::STRING)
-    //        return false; //#TODO test
-    //
-    //    auto newVal = sqf::config_entry(left) >> right;
-    //
-    //    instructions.erase(instructions.end() - 1);
-    //    instructions.erase(instructions.end() - 1);
-    //    instructions.emplace_back(GameInstructionConst::make(game_value(newVal)));
-    //
-    //
-    //    return true;
-    //};
+    bmap[">>"] = [](auto_array<ref<game_instruction>> & instructions) -> bool {
+        auto left = static_cast<GameInstructionConst*>((instructions.end()-2)->get())->value;
+        auto right = static_cast<GameInstructionConst*>(instructions.back().get())->value;
+    
+    
+        if (left.type_enum() != types::game_data_type::CONFIG || right.type_enum() != types::game_data_type::STRING)
+            return false; //#TODO test
+    
+        auto newVal = sqf::config_entry(left) >> right;
+    
+        instructions.erase(instructions.end() - 1);
+        instructions.erase(instructions.end() - 1);
+        instructions.emplace_back(GameInstructionConst::make(game_value(newVal)));
+    
+    
+        return true;
+    };
 
 
 }
