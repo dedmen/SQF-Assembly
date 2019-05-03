@@ -356,8 +356,8 @@ class asshelper
 {
 private:
     std::unordered_map<std::string_view, game_value> nmap;
-    std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value)>> umap;
-    std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value, game_value)>> bmap;
+    std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value_parameter)>> umap;
+    std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value_parameter, game_value_parameter)>> bmap;
 public:
     asshelper();
     bool containsNular(std::string_view key) const;

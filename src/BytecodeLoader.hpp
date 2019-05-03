@@ -7,6 +7,7 @@
 class BytecodeLoader : public intercept::singleton<BytecodeLoader> {
 public:
     void preStart();
+    void registerInterfaces();
     bool fileExists(const char* name) const;
 
 

@@ -8,6 +8,19 @@
 
 static sqf_script_type Compound_string_bytecode_type;
 
+class ArmaScriptProfiler_ProfInterface {
+public:
+    virtual game_value createScope(r_string name);
+    //v2
+    virtual game_value createScopeCustomThread(r_string name, uint64_t threadID);
+    //v3
+    virtual void ASM_createScopeInstr(game_state& state, game_data_code* bodyCode);
+    virtual game_value compile(game_state& state, game_value_parameter code, bool final);
+};
+
+ArmaScriptProfiler_ProfInterface* profiler = nullptr;
+
+
 class GameDataBytecode : public game_data {
 public:
     GameDataBytecode() = default;
@@ -209,18 +222,37 @@ game_value compile(game_state& gamestate, game_value_parameter bytecode) {
     auto bc = bytecode.get_as<GameDataBytecode>();
 
     auto e = bytecode.type_enum();
-    if (e == game_data_type::STRING) return intercept::sqf::compile(bytecode);
+    if (e == game_data_type::STRING) {
+        if (profiler)
+            return profiler->compile(gamestate, bytecode, false);
+        return intercept::sqf::compile(bytecode);
+    }
 
+
+    static const r_string scopeName("BC_LoadF"sv);
+    game_value profScope;
+
+    if (profiler)
+        profScope = profiler->createScope(scopeName);
 
     auto inputFile = bc->binPath.string();
 
     auto encodedBytecode = intercept::sqf::load_file(inputFile);
 
+    static const r_string scopeName2("BC_DEC"sv);
+    if (profiler)
+        profScope = profiler->createScope(scopeName2);
+
+
     auto decoded = base64_decode(encodedBytecode);
     auto code = ScriptSerializer::binaryToCompiledCompressed(decoded);
-    
-    auto res = BytecodeLoader::get().buildCode(std::move(code), bc->originalFilePath);
 
+    static const r_string scopeName3("BC_BUILD"sv);
+    if (profiler)
+        profScope = profiler->createScope(scopeName3);
+
+    auto res = BytecodeLoader::get().buildCode(std::move(code), bc->originalFilePath);
+    if (profiler) profiler->ASM_createScopeInstr(gamestate, res.get_as<game_data_code>()); //Let profiler inject it's instrumentation
     //auto a1 = intercept::sqf::compile(bytecode);
     //
     //auto b1 = a1.get_as<game_data_code>();
@@ -234,7 +266,7 @@ game_value compile(game_state& gamestate, game_value_parameter bytecode) {
     //
     //if (inputFile.find("cba") == std::string::npos)
     //    if (c1 != c2) __debugbreak();
-
+    profScope = game_value();
 
     return res;
 }
@@ -243,18 +275,38 @@ game_value compileF(game_state& gamestate, game_value_parameter bytecode) {
     auto bc = bytecode.get_as<GameDataBytecode>();
 
     auto e = bytecode.type_enum();
-    if (e == game_data_type::STRING) return intercept::sqf::compile(bytecode);
+    if (e == game_data_type::STRING) {
+        if (profiler)
+            return profiler->compile(gamestate, bytecode, true);
+        return intercept::sqf::compile_final(bytecode);
+    }
 
+    static const r_string scopeName("BC_LoadF"sv);
+    game_value profScope;
+
+    if (profiler)
+        profScope = profiler->createScope(scopeName);
 
     auto inputFile = bc->binPath.string();
 
 
     auto encodedBytecode = intercept::sqf::load_file(inputFile);
 
+    static const r_string scopeName2("BC_DEC"sv);
+    profScope = game_value();
+    if (profiler)
+        profScope = profiler->createScope(scopeName2);
+
     auto decoded = base64_decode(encodedBytecode);
     auto code = ScriptSerializer::binaryToCompiledCompressed(decoded);
 
+    static const r_string scopeName3("BC_BUILD"sv);
+    profScope = game_value();
+    if (profiler)
+        profScope = profiler->createScope(scopeName3);
+
     auto res = BytecodeLoader::get().buildCode(std::move(code), bc->originalFilePath, true);
+    if (profiler) profiler->ASM_createScopeInstr(gamestate, res.get_as<game_data_code>()); //Let profiler inject it's instrumentation
     //auto a1 = intercept::sqf::compile(bytecode);
     //
     //auto b1 = a1.get_as<game_data_code>();
@@ -267,7 +319,7 @@ game_value compileF(game_state& gamestate, game_value_parameter bytecode) {
     //    c1 = c1.substr(strlen("endStatement;\n"));
     //if (inputFile.find("cba") == std::string::npos)
     //    if (c1 != c2) __debugbreak();
-
+    profScope = game_value();
     return res;
 }
 
@@ -308,6 +360,11 @@ HookManager::Pattern fileExistsPat{
 
 
 void BytecodeLoader::preStart() {
+
+    auto iface = client::host::request_plugin_interface("ArmaScriptProfilerProfIFace", 3);
+    if (iface)
+        profiler = static_cast<ArmaScriptProfiler_ProfInterface*>(*iface);
+
     optimizer.init();
 
     HookManager manager;
@@ -327,6 +384,11 @@ void BytecodeLoader::preStart() {
     static auto _preprocLNB = intercept::client::host::register_sqf_command("preprocessFileLineNumbers", "", preprocFileLN, codeType.first, game_data_type::STRING);
     static auto _preprocB = intercept::client::host::register_sqf_command("preprocessFile", "", preprocFile, codeType.first, game_data_type::STRING);
 
+}
+
+void BytecodeLoader::registerInterfaces() {
+    //Tell arma script profiler that it should not override compile
+    client::host::register_plugin_interface("ProfilerNoCompile"sv, 1, reinterpret_cast<void*>(1));
 }
 
 bool BytecodeLoader::fileExists(const char* name) const {

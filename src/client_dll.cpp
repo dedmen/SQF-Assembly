@@ -290,21 +290,22 @@ game_value compileAssembly(game_state& gamestate, game_value_parameter code) {
 
 
 game_value optimizeCode(game_state& gamestate, game_value_parameter code) {
-    auto origCode = static_cast<game_data_code*>(code.data.get());
-
- 
-    auto c = sqf::compile("test");
-    auto compiled = static_cast<game_data_code*>(c.data.get());
-    compiled->code_string = origCode->code_string;
-
-	//ToDo: move into a gen-one-time static variable
-    asshelper nh;
-    auto newInstructions = nh.optimize(gamestate, origCode->instructions);
-
-
-
-    compiled->instructions = auto_array<ref<game_instruction>>(newInstructions.begin(), newInstructions.end());
-    return c;
+    //Broke AF
+    //auto origCode = static_cast<game_data_code*>(code.data.get());
+    //
+    //
+    //auto c = sqf::compile("test");
+    //auto compiled = static_cast<game_data_code*>(c.data.get());
+    //compiled->code_string = origCode->code_string;
+    //
+    ////ToDo: move into a gen-one-time static variable
+    //asshelper nh;
+    //auto newInstructions = nh.optimize(gamestate, origCode->instructions);
+    //
+    //
+    //
+    //compiled->instructions = auto_array<ref<game_instruction>>(newInstructions.begin(), newInstructions.end());
+    return code;
 }
 
 int intercept::api_version() {
@@ -340,6 +341,7 @@ void intercept::register_interfaces() {
 	vtGlobal.vt_GameInstructionArray = GameInstructionArray::vtablePtr;
 
 	client::host::register_plugin_interface("sqf_asm_devIf", 1, &vtGlobal);
+    BytecodeLoader::get().registerInterfaces();
 
 }
 

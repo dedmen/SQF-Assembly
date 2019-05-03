@@ -42,7 +42,7 @@ void BytecodeOptimizer::init() {
     umap["gettext"] = [](auto_array<ref<game_instruction>> & instructions) -> bool {
         auto lastVal = static_cast<GameInstructionConst*>(instructions.back().get())->value;
         if (lastVal.type_enum() != types::game_data_type::CONFIG) return false;
-
+    
         auto newVal = sqf::get_text(lastVal);
         instructions.erase(instructions.end() - 1);
         instructions.emplace_back(GameInstructionConst::make(newVal));
@@ -82,7 +82,7 @@ void BytecodeOptimizer::init() {
     umap["configproperties"] = [](auto_array<ref<game_instruction>> & instructions) -> bool {
         auto lastVal = static_cast<GameInstructionConst*>(instructions.back().get())->value;
         if (lastVal.type_enum() != types::game_data_type::ARRAY) return {};
-
+    
         auto cfg = lastVal.get(0);
         if (!cfg) return false;
         auto cond = lastVal.get(1);
@@ -93,11 +93,10 @@ void BytecodeOptimizer::init() {
             cond ? *cond : "true"sv,
             inherit ? *inherit : true
         );
-
-
+    
         instructions.erase(instructions.end() - 1);
         instructions.emplace_back(GameInstructionConst::make(res));
-
+    
         return true;
     };
 

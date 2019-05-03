@@ -23,47 +23,47 @@ asshelper::asshelper() {
     nmap["missionconfigfile"] = sqf::mission_config_file();
 
 
-    umap["sqrt"] = [](game_value right) -> std::optional<game_value> {
+    umap["sqrt"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::SCALAR) return {};
         return game_value(sqrt(static_cast<float>(right)));
     };
 
-    umap["localize"] = [](game_value right) -> std::optional<game_value> {
+    umap["localize"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::STRING) return {};
         return game_value(sqf::localize(right));
     };
 
-    umap["!"] = [](game_value right) -> std::optional<game_value> {
+    umap["!"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::BOOL) return {};
         return game_value(!static_cast<bool>(right));
     };
 
-    umap["getnumber"] = [](game_value right) -> std::optional<game_value> {
+    umap["getnumber"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::CONFIG) return {};
         return game_value(sqf::get_number(right));
     };
 
-    umap["gettext"] = [](game_value right) -> std::optional<game_value> {
+    umap["gettext"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::CONFIG) return {};
         return game_value(sqf::get_text(right));
     };
 
-    umap["getarray"] = [](game_value right) -> std::optional<game_value> {
+    umap["getarray"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::CONFIG) return {};
         return game_value(sqf::get_array(right));
     };
 
-    umap["isclass"] = [](game_value right) -> std::optional<game_value> {
+    umap["isclass"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::CONFIG) return {};
         return game_value(sqf::is_class(right));
     };
 
-    umap["istext"] = [](game_value right) -> std::optional<game_value> {
+    umap["istext"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::CONFIG) return {};
         return game_value(sqf::is_text(right));
     };
 
-    umap["configproperties"] = [](game_value right) -> std::optional<game_value> {
+    umap["configproperties"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::ARRAY) return {};
         auto cfg = right.get(0);
         if (!cfg) return {};
@@ -77,7 +77,7 @@ asshelper::asshelper() {
         ));
     };
 
-    umap["count"] = [](game_value right) -> std::optional<game_value> {
+    umap["count"] = [](game_value_parameter right) -> std::optional<game_value> {
         if (right.type_enum() != types::GameDataType::ARRAY) return {};
         return game_value(right.size());
     };
@@ -92,18 +92,18 @@ asshelper::asshelper() {
 
     //#TODO check if https://community.bistudio.com/wiki/-_a is properly done compiletime
 
-    bmap["mod"] = [](game_value left, game_value right) -> std::optional<game_value> {
+    bmap["mod"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
         if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR)
             return {};
         return game_value(fmodf(static_cast<float>(left), static_cast<float>(right)));
     };
-    bmap["else"] = [](game_value left, game_value right) -> std::optional<game_value> {
+    bmap["else"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
         if (left.type_enum() != types::GameDataType::CODE || right.type_enum() != types::GameDataType::CODE)
             return {};
         return game_value({left, right});
     };
 
-    bmap[">>"] = [](game_value left, game_value right) -> std::optional<game_value> {
+    bmap[">>"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
         if (left.type_enum() != types::GameDataType::CONFIG || right.type_enum() != types::GameDataType::STRING)
             return {}; //#TODO test
         return game_value(sqf::config_entry(left) >> right);
@@ -111,24 +111,24 @@ asshelper::asshelper() {
 
 
     //#TODO does this obey * before - ?
-    bmap["+"] = [](game_value left, game_value right) -> std::optional<game_value> {
+    bmap["+"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
         if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR)
             return {}; //#TODO test
         return game_value(static_cast<float>(left) + static_cast<float>(right));
     };
 
-    bmap["-"] = [](game_value left, game_value right) -> std::optional<game_value> {
+    bmap["-"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
         if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR)
             return {}; //#TODO test
         return game_value(static_cast<float>(left) - static_cast<float>(right));
     };
 
-    bmap["/"] = [](game_value left, game_value right) -> std::optional<game_value> {
+    bmap["/"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
         if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR)
             return {}; //#TODO test
         return game_value(static_cast<float>(left) / static_cast<float>(right));
     };
-	bmap["*"] = [](game_value left, game_value right) -> std::optional<game_value> {
+	bmap["*"] = [](game_value_parameter left, game_value_parameter right) -> std::optional<game_value> {
 		if (left.type_enum() != types::GameDataType::SCALAR || right.type_enum() != types::GameDataType::SCALAR)
 			return {}; //#TODO test
 		return game_value(static_cast<float>(left) * static_cast<float>(right));
@@ -265,24 +265,26 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state& gs,
             }
                 break;
             case insttype::callUnary: {
-                auto inst = static_cast<GameInstructionFunction*>(instr.get());
-                auto newValue = get(&gs, inst->getFuncName().c_str(), instructions[i - 1]);
-                if (newValue) {
-                    i -= 1;
-                    instructions[i] = GameInstructionConst::make(std::move(*newValue));
-                }
+                //auto inst = static_cast<GameInstructionFunction*>(instr.get());
+                //auto newValue = get(&gs, inst->getFuncName().c_str(), instructions[i - 1]);
+                //if (newValue) {
+                //    i -= 1;
+                //    instructions.erase(instructions.begin() + i);
+                //    instructions[i] = GameInstructionConst::make(std::move(*newValue));
+                //}
             }
                 break;
             case insttype::callBinary: {
-                auto inst = static_cast<GameInstructionFunction*>(instr.get());
-                game_value valueslot;
-                auto newValue = get(&gs, inst->getFuncName().c_str(), instructions[i - 2],
-                                    instructions[i - 1]);
-                if (newValue) {
-                    i -= 2;
-                    instructions.erase(instructions.begin() + i);
-                    instructions[i] = GameInstructionConst::make(std::move(*newValue));
-                }
+                //auto inst = static_cast<GameInstructionFunction*>(instr.get());
+                //game_value valueslot;
+                //auto newValue = get(&gs, inst->getFuncName().c_str(), instructions[i - 2],
+                //                    instructions[i - 1]);
+                //if (newValue) {
+                //    instructions.erase(instructions.begin() + i - 1);
+                //    instructions.erase(instructions.begin() + i - 2);
+                //    i -= 2;
+                //    instructions[i] = GameInstructionConst::make(std::move(*newValue));
+                //}
             }
                 break;
             case insttype::push: {
