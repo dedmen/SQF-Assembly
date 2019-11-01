@@ -66,7 +66,7 @@ std::string instructionToString(game_state* gs, const ref<game_instruction>& ins
             if (inst->value.data->type_as_string()=="code"sv) {
                 ret += " {\n";
                 
-                for (auto& it : inst->value.get_as<game_data_code>()->instructions) {
+                for (auto& it : *inst->value.get_as<game_data_code>()->instructions) {
                     auto res = instructionToString(gs, it);
                     if (!res.empty())
                         ret += res + "\n";
@@ -216,9 +216,9 @@ void skipWhitespace(std::string_view& str) {
 game_value decompileAssembly(game_state& gs, game_value_parameter code) {
     if (code.is_nil()) return 0;
     auto c = (game_data_code*) code.data.get();
-    if (c->instructions.empty()) return 0;
+    if (c->instructions->size() == 0) return 0;
     std::string out;
-    for (auto& it : c->instructions) {
+    for (auto& it : *c->instructions) {
         //auto& type = typeid(*it.get());
         out += instructionToString(&gs, it);
         out += "\n";
@@ -274,14 +274,7 @@ game_value compileAssembly(game_state& gamestate, game_value_parameter code) {
 
     auto compiled = static_cast<game_data_code*>(c.data.get());
     compiled->code_string = code;
-    compiled->instructions.resize(instr.size());
-
-    auto& arr = compiled->instructions;
-
-    uint32_t idx = 0;
-    for (auto& it : instr) {
-        arr.data()[idx++] = it;
-    }
+    compiled->instructions = compact_array<ref<game_instruction>>::create(instr.begin(), instr.end());
 
     return c;
 }
@@ -326,9 +319,11 @@ static struct vtables {
 void intercept::register_interfaces() {
 	
 	//That should really be done in preStart. But we need it done before people access the interface
-	auto code = sqf::compile("private _var = [1, player, player setPos[1, 2, 3], getPos player]; _var");
-	auto c = (game_data_code*) code.data.get();
-	for (auto& it : c->instructions) {
+    auto code = sqf::compile("private _var = [1, player, player setPos[1, 2, 3], getPos player]; _var");
+    //auto code2 = sqf::compile_final("private _var = [1, player, player setPos[1, 2, 3], getPos player]; _var");
+    auto c = (game_data_code*)code.data.get();
+    //auto c2 = (game_data_code*) code2.data.get();
+	for (auto& it : *c->instructions) {
 		prepVtables(it);
 	}
 
