@@ -165,8 +165,7 @@ game_value BytecodeLoader::buildCodeInstructions(const CompiledCodeData& data, c
     }
 
     auto newCode = getNewCode(final);
-
-    newCode->instructions = compact_array<ref<game_instruction>>::create(instructions.begin(), instructions.end());
+    newCode->instructions = std::move(instructions);
     //auto file = data.fileNames[inst.front().fileIndex];
     newCode->code_string = content;
 
@@ -209,7 +208,7 @@ game_value fileExists_sqf(game_state& gamestate, game_value_parameter filename) 
 
 std::string toASM(game_state& gamestate, game_data_code* newCode) {
     std::string out;
-    for (auto& it : *newCode->instructions) {
+    for (auto& it : newCode->instructions) {
         //auto& type = typeid(*it.get());
         auto res = instructionToString(&gamestate, it);
         if (res.empty() < 3) continue;
@@ -239,11 +238,6 @@ game_value compile(game_state& gamestate, game_value_parameter bytecode) {
     auto inputFile = bc->binPath.string();
 
     auto encodedBytecode = intercept::sqf::load_file(inputFile);
-    if (encodedBytecode.empty()) {
-        if (profiler)
-            return profiler->compile(gamestate, bytecode, false);
-        return intercept::sqf::compile(bytecode);
-    }
 
     static const r_string scopeName2("BC_DEC"sv);
     if (profiler)
@@ -297,12 +291,6 @@ game_value compileF(game_state& gamestate, game_value_parameter bytecode) {
 
 
     auto encodedBytecode = intercept::sqf::load_file(inputFile);
-
-    if (encodedBytecode.empty()) { //#TODO sqfc allowed loadFile file extensions on server
-        if (profiler)
-            return profiler->compile(gamestate, bytecode, false);
-        return intercept::sqf::compile(bytecode);
-    }
 
     static const r_string scopeName2("BC_DEC"sv);
     profScope = game_value();

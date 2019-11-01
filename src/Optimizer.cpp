@@ -294,11 +294,9 @@ std::vector<ref<game_instruction>> asshelper::optimize(game_state& gs,
                     //#TODO only if code is non-empty
                     auto compiled = static_cast<game_data_code*>(inst->value.data.get());
 
-                    auto_array<ref<game_instruction>> newRef(compiled->instructions->begin(), compiled->instructions->end());
+                    auto newInstructions = optimize(gs, compiled->instructions);
 
-                    auto newInstructions = optimize(gs, newRef);
-
-                    compiled->instructions = compact_array<ref<game_instruction>>::create(newInstructions.begin(), newInstructions.end());
+                    compiled->instructions = auto_array<ref<game_instruction>>(newInstructions.begin(), newInstructions.end());
                     //#TODO test
                 }
             }
