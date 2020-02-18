@@ -190,3 +190,18 @@ uintptr_t HookManager::findPattern(const Pattern & pat, uintptr_t offset) const 
 
     return findPattern(pat.pattern, pat.mask, pat.offset + offset);
 }
+
+std::string get_command_line() {
+#if __linux__
+    std::ifstream cmdline("/proc/self/cmdline");
+    std::string file_contents;
+    std::string line;
+    while (std::getline(cmdline, line, '\0')) {
+        file_contents += line;
+        file_contents.push_back(' '); //#TODO can linux even have more than one line?
+    }
+    return file_contents;
+#else
+    return GetCommandLineA();
+#endif
+}

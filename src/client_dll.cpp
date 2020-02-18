@@ -114,7 +114,9 @@ std::string instructionToString(game_state* gs, const ref<game_instruction>& ins
             return std::string("makeArray ") + std::to_string(inst->size) + ITS_LINEEND;
         } break;
 
-        default: __debugbreak();
+        default: {
+            return std::string("unknown ") + typeName;
+        }
     }
     return "";
 }

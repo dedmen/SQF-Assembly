@@ -359,6 +359,23 @@ HookManager::Pattern fileExistsPat{
 };
 
 
+extern std::string get_command_line();
+
+std::optional<std::string> getCommandLineParam(std::string_view needle) {
+    std::string commandLine = get_command_line();
+    const auto found = commandLine.find(needle);
+    if (found != std::string::npos) {
+        const auto spacePos = commandLine.find(' ', found + needle.length() + 1);
+        const auto valueLength = spacePos - (found + needle.length() + 1);
+        auto adapterStr = commandLine.substr(found + needle.length() + 1, valueLength);
+        if (adapterStr.back() == '"')
+            adapterStr = adapterStr.substr(0, adapterStr.length() - 1);
+        return adapterStr;
+    }
+    return {};
+}
+
+
 void BytecodeLoader::preStart() {
 
     auto iface = client::host::request_plugin_interface("ArmaScriptProfilerProfIFace", 3);
@@ -378,17 +395,19 @@ void BytecodeLoader::preStart() {
     //static auto _compileB = intercept::client::host::register_sqf_command("compile", "", compile, game_data_type::CODE, codeType.first);
     //static auto _compileFB = intercept::client::host::register_sqf_command("compileFinal", "", compileF, game_data_type::CODE, codeType.first);
 
-    static auto _compile2B = intercept::client::host::register_sqf_command("compile", "", compile, game_data_type::CODE, game_data_type::STRING);
-    static auto _compile2FB = intercept::client::host::register_sqf_command("compileFinal", "", compileF, game_data_type::CODE, game_data_type::STRING);
-    
-    static auto _preprocLNB = intercept::client::host::register_sqf_command("preprocessFileLineNumbers", "", preprocFileLN, codeType.first, game_data_type::STRING);
-    static auto _preprocB = intercept::client::host::register_sqf_command("preprocessFile", "", preprocFile, codeType.first, game_data_type::STRING);
+    if (!getCommandLineParam("-sqfasm-no-sqfc")) {
+        static auto _compile2B = intercept::client::host::register_sqf_command("compile", "", compile, game_data_type::CODE, game_data_type::STRING);
+        static auto _compile2FB = intercept::client::host::register_sqf_command("compileFinal", "", compileF, game_data_type::CODE, game_data_type::STRING);
 
+        static auto _preprocLNB = intercept::client::host::register_sqf_command("preprocessFileLineNumbers", "", preprocFileLN, codeType.first, game_data_type::STRING);
+        static auto _preprocB = intercept::client::host::register_sqf_command("preprocessFile", "", preprocFile, codeType.first, game_data_type::STRING);
+    }
 }
 
 void BytecodeLoader::registerInterfaces() {
     //Tell arma script profiler that it should not override compile
-    client::host::register_plugin_interface("ProfilerNoCompile"sv, 1, reinterpret_cast<void*>(1));
+    if (!getCommandLineParam("-sqfasm-no-sqfc"))
+        client::host::register_plugin_interface("ProfilerNoCompile"sv, 1, reinterpret_cast<void*>(1));
 }
 
 bool BytecodeLoader::fileExists(const char* name) const {
