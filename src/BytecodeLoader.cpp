@@ -205,6 +205,10 @@ game_value fileExists_sqf(game_state& gamestate, game_value_parameter filename) 
     return BytecodeLoader::get().fileExists(name.c_str());
 }
 
+bool fileExists_raw(r_string filename) {
+    return BytecodeLoader::get().fileExists(filename.c_str());
+}
+
 
 std::string toASM(game_state& gamestate, game_data_code* newCode) {
     std::string out;
@@ -408,6 +412,7 @@ void BytecodeLoader::registerInterfaces() {
     //Tell arma script profiler that it should not override compile
     if (!getCommandLineParam("-sqfasm-no-sqfc"))
         client::host::register_plugin_interface("ProfilerNoCompile"sv, 1, reinterpret_cast<void*>(1));
+    client::host::register_plugin_interface("sqfasm_fileExists"sv, 1, reinterpret_cast<void*>(fileExists_raw));
 }
 
 bool BytecodeLoader::fileExists(const char* name) const {
