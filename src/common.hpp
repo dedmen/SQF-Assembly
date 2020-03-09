@@ -149,6 +149,8 @@ public:
 
 
     GameInstructionConst(game_value&& val) : value(val) { setVtable(); }
+    GameInstructionConst(game_value_static&& val) : value(static_cast<game_value&&>(val)) { setVtable(); }
+    GameInstructionConst(const game_value_static val) : value(static_cast<const game_value>(val)) { setVtable(); }
     GameInstructionConst() { setVtable(); }
     GameInstructionConst(std::nullptr_t) {}
     static ref<GameInstructionConst> make(game_value val) {
@@ -355,7 +357,7 @@ public:
 class asshelper
 {
 private:
-    std::unordered_map<std::string_view, game_value> nmap;
+    std::unordered_map<std::string_view, game_value_static> nmap;
     std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value_parameter)>> umap;
     std::unordered_map<std::string_view, std::function<std::optional<game_value>(game_value_parameter, game_value_parameter)>> bmap;
 public:
