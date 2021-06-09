@@ -395,28 +395,28 @@ void BytecodeLoader::preStart() {
     Compound_string_bytecode_type = intercept::client::host::register_compound_sqf_type({ codeType.first, game_data_type::STRING });
 
 
-    static auto _fileExists = intercept::client::host::register_sqf_command("fileExists", "", fileExists_sqf, game_data_type::BOOL, game_data_type::STRING);
+    //static auto _fileExists = intercept::client::host::register_sqf_command("fileExists", "", fileExists_sqf, game_data_type::BOOL, game_data_type::STRING);
     //static auto _compileB = intercept::client::host::register_sqf_command("compile", "", compile, game_data_type::CODE, codeType.first);
     //static auto _compileFB = intercept::client::host::register_sqf_command("compileFinal", "", compileF, game_data_type::CODE, codeType.first);
 
-    if (!getCommandLineParam("-sqfasm-no-sqfc")) {
-        static auto _compile2B = intercept::client::host::register_sqf_command("compile", "", compile, game_data_type::CODE, game_data_type::STRING);
-        static auto _compile2FB = intercept::client::host::register_sqf_command("compileFinal", "", compileF, game_data_type::CODE, game_data_type::STRING);
+    //if (!getCommandLineParam("-sqfasm-no-sqfc")) {
+    //    static auto _compile2B = intercept::client::host::register_sqf_command("compile", "", compile, game_data_type::CODE, game_data_type::STRING);
+    //    static auto _compile2FB = intercept::client::host::register_sqf_command("compileFinal", "", compileF, game_data_type::CODE, game_data_type::STRING);
 
-        static auto _preprocLNB = intercept::client::host::register_sqf_command("preprocessFileLineNumbers", "", preprocFileLN, codeType.first, game_data_type::STRING);
-        static auto _preprocB = intercept::client::host::register_sqf_command("preprocessFile", "", preprocFile, codeType.first, game_data_type::STRING);
-    }
+    //    static auto _preprocLNB = intercept::client::host::register_sqf_command("preprocessFileLineNumbers", "", preprocFileLN, codeType.first, game_data_type::STRING);
+    //    static auto _preprocB = intercept::client::host::register_sqf_command("preprocessFile", "", preprocFile, codeType.first, game_data_type::STRING);
+    //}
 }
 
 void BytecodeLoader::registerInterfaces() {
     //Tell arma script profiler that it should not override compile
-    if (!getCommandLineParam("-sqfasm-no-sqfc"))
-        client::host::register_plugin_interface("ProfilerNoCompile"sv, 1, reinterpret_cast<void*>(1));
-    client::host::register_plugin_interface("sqfasm_fileExists"sv, 1, reinterpret_cast<void*>(fileExists_raw));
+    //if (!getCommandLineParam("-sqfasm-no-sqfc"))
+    //    client::host::register_plugin_interface("ProfilerNoCompile"sv, 1, reinterpret_cast<void*>(1));
+    //client::host::register_plugin_interface("sqfasm_fileExists"sv, 1, reinterpret_cast<void*>(fileExists_raw));
 }
 
 bool BytecodeLoader::fileExists(const char* name) const {
-    if (!fileExistsInt) __debugbreak();
+    if (!fileExistsInt) return false;
     if (*name == '\\') name++;
     return fileExistsInt(name, nullptr);
 }
