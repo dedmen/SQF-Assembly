@@ -1,0 +1,31 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  windows:
+    name: Windows (${{ matrix.arch }})
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - Win32
+          - x64
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 16 2019" -A ${{ matrix.arch }} .. && cmake --build . --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: Windows (${{ matrix.arch }})
+          path: |
+            build/**/Release/sqf-assembly*.dll
+            build/**/Release/sqf-assembly*.pdb
+          if-no-files-found: error
