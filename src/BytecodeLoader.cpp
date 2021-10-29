@@ -157,10 +157,10 @@ game_value BytecodeLoader::buildCodeInstructions(const CompiledCodeData& data, c
             break;
         default:;
         }
-        instructions.back()->sdp.pos = it.offset;
-        instructions.back()->sdp.sourcefile = data.fileNames[it.fileIndex];
-        instructions.back()->sdp.content = fileContent;
-        instructions.back()->sdp.sourceline = it.line;
+        instructions.back()->sdp->pos = it.offset;
+        instructions.back()->sdp->sourcefile = data.fileNames[it.fileIndex];
+        instructions.back()->sdp->content = fileContent;
+        instructions.back()->sdp->sourceline = it.line;
 
     }
 
