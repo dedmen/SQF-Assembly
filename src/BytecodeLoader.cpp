@@ -98,9 +98,9 @@ game_value BytecodeLoader::buildCodeInstructions(const CompiledCodeData& data, c
 
     auto_array<ref<game_instruction>> instructions;
     instructions.reserve(inst.code.size());
-    r_string content;
+    STRINGTYPE content;
     auto contentStringIndex = std::get<0>(data.constants[data.codeIndex]).contentString;
-    r_string fileContent = std::get<STRINGTYPE>(data.constants[contentStringIndex]);
+    STRINGTYPE fileContent = std::get<STRINGTYPE>(data.constants[contentStringIndex]);
     if (inst.contentSplit.isOffset) {
         content = fileContent.substr(inst.contentSplit.offset, inst.contentSplit.length);
     } else {
@@ -117,44 +117,77 @@ game_value BytecodeLoader::buildCodeInstructions(const CompiledCodeData& data, c
         case InstructionType::push: {
             //#TODO if we push an array, we need to push a callUnary operator `+` to make sure it's copied.
             //Unless next instruction is something like params or forEach
+#ifdef ASC_INTERCEPT
             auto index = std::get<1>(it.content);
             instructions.emplace_back(GameInstructionConst::make(data.builtConstants[index])); //#TODO push of type array must be custom instruction that copies array on access
+#endif
         } break;
         case InstructionType::callUnary: {
+#ifdef ASC_INTERCEPT
             r_string name = std::get<0>(it.content);
+#else
+            r_string name = r_string(std::get<0>(it.content));
+#endif
+
             if (!optimizer.onUnary(name, instructions)) {
                 auto fnc = &gs->get_script_functions().get(name);
                 instructions.emplace_back(GameInstructionFunction::make(fnc));
             }
         } break;
         case InstructionType::callBinary: {
+#ifdef ASC_INTERCEPT
             r_string name = std::get<0>(it.content);
+#else
+            r_string name = r_string(std::get<0>(it.content));
+#endif
+
             if (!optimizer.onBinary(name, instructions)) {
                 auto& fnc = gs->get_script_operators().get(name);
                 instructions.emplace_back(GameInstructionOperator::make(&fnc));
             }
         } break;
         case InstructionType::callNular: {
+#ifdef ASC_INTERCEPT
             r_string name = std::get<0>(it.content);
+#else
+            r_string name = r_string(std::get<0>(it.content));
+#endif
+
             if (!optimizer.onNular(name, instructions)) {
                 //auto fnc = &gs->get_script_nulars().get(name);
                 instructions.emplace_back(GameInstructionVariable::make(name));
             }
         } break;
-        case InstructionType::assignTo:
-            instructions.emplace_back(GameInstructionAssignment::make(std::get<0>(it.content), false));
-            break;
-        case InstructionType::assignToLocal:
-            instructions.emplace_back(GameInstructionAssignment::make(std::get<0>(it.content), true));
-            break;
-        case InstructionType::getVariable: {
+        case InstructionType::assignTo: {
+#ifdef ASC_INTERCEPT
             r_string name = std::get<0>(it.content);
+#else
+            r_string name = r_string(std::get<0>(it.content));
+#endif
+
+            instructions.emplace_back(GameInstructionAssignment::make(name, false));
+        } break;
+        case InstructionType::assignToLocal: {
+#ifdef ASC_INTERCEPT
+            r_string name = std::get<0>(it.content);
+#else
+            r_string name = r_string(std::get<0>(it.content));
+#endif
+
+            instructions.emplace_back(GameInstructionAssignment::make(name, true));
+        } break;
+        case InstructionType::getVariable: {
+#ifdef ASC_INTERCEPT
+            r_string name = std::get<0>(it.content);
+#else
+            r_string name = r_string(std::get<0>(it.content));
+#endif
 
             instructions.emplace_back(GameInstructionVariable::make(name));
         } break;
-        case InstructionType::makeArray:
+        case InstructionType::makeArray: {
             instructions.emplace_back(GameInstructionArray::make(std::get<1>(it.content)));
-            break;
+        } break;
         default:;
         }
         instructions.back()->sdp->pos = it.offset;
@@ -193,10 +226,12 @@ game_value BytecodeLoader::buildConstant(const CompiledCodeData& data, const Scr
 
 
 game_value BytecodeLoader::buildCode(CompiledCodeData data, r_string originalPath, bool final) const {
+#ifdef ASC_INTERCEPT
     data.builtConstants.reserve(data.constants.size());
     for (auto& it : data.constants) {
         data.builtConstants.emplace_back(buildConstant(data, it, originalPath));
     }
+#endif
     return buildCodeInstructions(data, std::get<0>(data.constants[data.codeIndex]), originalPath, final);
 }
 

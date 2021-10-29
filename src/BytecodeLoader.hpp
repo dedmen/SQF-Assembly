@@ -1,6 +1,5 @@
 #pragma once
 #include <common/singleton.hpp>
-#define ASC_INTERCEPT
 #include <scriptSerializer.hpp>
 #include "BytecodeOptimizer.hpp"
 
