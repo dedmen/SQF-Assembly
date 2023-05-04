@@ -142,7 +142,7 @@ public:
 	static const size_t typeIDHash = 0x8c0dbf90;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -178,7 +178,7 @@ public:
     static const size_t typeIDHash = 0xc04f83b1;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -207,7 +207,7 @@ public:
     static const size_t typeIDHash = 0x0ac32571;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -241,7 +241,7 @@ public:
     static const size_t typeIDHash = 0x72ff7d2d;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -276,7 +276,7 @@ public:
     static const size_t typeIDHash = 0x4b5efb7a;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -305,7 +305,7 @@ public:
     static const size_t typeIDHash = 0xd27a68ec;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -335,7 +335,7 @@ public:
     static const size_t typeIDHash = 0xc2bb0eeb;
 #endif
     static inline instructionVtable defVtable;
-	static inline void* vtablePtr;
+	static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
@@ -365,7 +365,7 @@ public:
     static const size_t typeIDHash = 0x0;
 #endif
     static inline instructionVtable defVtable;
-    static inline void* vtablePtr;
+    static inline void* vtablePtr {nullptr};
     void setVtable() {
         VTABLESETTER
     }
