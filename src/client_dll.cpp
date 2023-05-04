@@ -42,8 +42,13 @@ void prepVtables(const ref<game_instruction>& instr) {
             GameInstructionArray::defVtable.init(instr.get(), mInst.get());
 			GameInstructionArray::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
         } break;
+        case GameInstructionNular::typeIDHash: { //GameInstructionNular
+            ref<GameInstructionNular> mInst = GameInstructionNular::make(nullptr);
+            GameInstructionNular::defVtable.init(instr.get(), mInst.get());
+            GameInstructionNular::vtablePtr = *reinterpret_cast<instructionVtable**>(instr.get());
+        } break;
 
-        default: __debugbreak();
+        //default: if (IsDebuggerPresent()) __debugbreak();
     }
 }
 
@@ -322,6 +327,7 @@ static struct vtables {
 	void* vt_GameInstructionAssignment;
 	void* vt_GameInstructionVariable;
 	void* vt_GameInstructionArray;
+	void* vt_GameInstructionNular;
 } vtGlobal;
 
 
@@ -341,6 +347,7 @@ void intercept::register_interfaces() {
 	vtGlobal.vt_GameInstructionAssignment = GameInstructionAssignment::vtablePtr;
 	vtGlobal.vt_GameInstructionVariable = GameInstructionVariable::vtablePtr;
 	vtGlobal.vt_GameInstructionArray = GameInstructionArray::vtablePtr;
+	vtGlobal.vt_GameInstructionNular = GameInstructionNular::vtablePtr;
 
 	client::host::register_plugin_interface("sqf_asm_devIf", 1, &vtGlobal);
     BytecodeLoader::get().registerInterfaces();
