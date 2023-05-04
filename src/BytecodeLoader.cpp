@@ -6,7 +6,7 @@
 #include <sstream>
 #include "common.hpp"
 
-static sqf_script_type Compound_string_bytecode_type;
+static sqf_script_type* Compound_string_bytecode_type;
 
 class ArmaScriptProfiler_ProfInterface {
 public:
@@ -26,7 +26,7 @@ public:
     GameDataBytecode() = default;
     //GameDataBytecode(std::shared_ptr<scopeData>&& _data) noexcept : data(std::move(_data)) {}
     void lastRefDeleted() const override { delete this; }
-    const sqf_script_type& type() const override { return Compound_string_bytecode_type; }
+    const sqf_script_type& type() const override { return *Compound_string_bytecode_type; }
     ~GameDataBytecode() override = default;
     bool get_as_bool() const override { return true; }
     float get_as_number() const override { return 0.f; }
